@@ -102,6 +102,8 @@ jobs:
         run: |
           cd "$E2E_DIR"
           BEFORE=$(find .opencode/skills -name 'SKILL.md' | wc -l)
+          echo "Waiting 60s for rate limit reset..."
+          sleep 60
           node "$WORKSPACE/bin/setup.js" \
             --org aictrl \
             --editors opencode \
