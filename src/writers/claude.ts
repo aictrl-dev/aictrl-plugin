@@ -1,4 +1,4 @@
-import { writeFile, mkdir, readFile } from 'fs/promises';
+import { writeFile, mkdir, readFile, chmod } from 'fs/promises';
 import { join } from 'path';
 import { writeSkill, clearSkillsDir, type WritableSkill } from './shared.js';
 import { generateClaudeHook } from '../hooks/claude.sh.js';
@@ -60,6 +60,7 @@ export async function installClaudePlugin(options: ClaudePluginOptions): Promise
     ) + '\n',
     'utf-8',
   );
+  await chmod(join(pluginDir, '.mcp.json'), 0o600);
 
   // Write skills
   for (const skill of skills) {

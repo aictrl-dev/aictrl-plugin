@@ -28,6 +28,12 @@ describe('credentials', () => {
       expect(creds).toEqual({ orgs: {} });
     });
 
+    it('throws on corrupt JSON file', async () => {
+      await writeFile(credentialsFile, '{not valid json');
+      await expect(readCredentials(credentialsFile))
+        .rejects.toThrow('Corrupt credentials file');
+    });
+
     it('reads existing credentials', async () => {
       await writeFile(credentialsFile, JSON.stringify({
         orgs: { talentrix: { apiKey: 'sk_live_xxx' } }

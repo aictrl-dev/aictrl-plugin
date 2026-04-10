@@ -48,6 +48,10 @@ export async function fetchMarketplace(
 
   const data = await response.json() as MarketplaceResponse;
 
+  if (!Array.isArray(data.plugins)) {
+    throw new Error('Invalid marketplace response: missing plugins array');
+  }
+
   const mcpPrefix = `aictrl-`;
   return data.plugins
     .filter(p => !(p.tags?.includes('mcp') && p.name.startsWith(mcpPrefix)))

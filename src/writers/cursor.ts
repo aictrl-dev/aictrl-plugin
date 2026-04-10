@@ -1,4 +1,4 @@
-import { writeFile, mkdir, readFile } from 'fs/promises';
+import { writeFile, mkdir, readFile, chmod } from 'fs/promises';
 import { join } from 'path';
 import { writeSkill, clearSkillsDir, type WritableSkill } from './shared.js';
 import { generateCursorHook } from '../hooks/cursor.sh.js';
@@ -49,6 +49,7 @@ async function mergeMcpConfig(
 
   const mcpServers = (mcpConfig.mcpServers ?? {}) as Record<string, unknown>;
   mcpServers[`aictrl-${orgSlug}`] = {
+    type: 'http',
     url: `${baseUrl}/${orgSlug}/mcp`,
     headers: { Authorization: `Bearer ${apiKey}` },
   };
@@ -56,4 +57,5 @@ async function mergeMcpConfig(
 
   await mkdir(join(mcpFile, '..'), { recursive: true });
   await writeFile(mcpFile, JSON.stringify(mcpConfig, null, 2) + '\n', 'utf-8');
+  await chmod(mcpFile, 0o600);
 }

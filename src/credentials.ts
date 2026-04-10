@@ -13,7 +13,10 @@ export async function readCredentials(filePath: string): Promise<Credentials> {
   try {
     const content = await readFile(filePath, 'utf-8');
     return JSON.parse(content) as Credentials;
-  } catch {
+  } catch (err: unknown) {
+    if (err instanceof SyntaxError) {
+      throw new Error(`Corrupt credentials file: ${filePath}. Fix or delete it manually.`);
+    }
     return { orgs: {} };
   }
 }
