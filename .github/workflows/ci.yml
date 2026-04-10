@@ -1,0 +1,111 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  unit:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm test
+
+  e2e:
+    name: E2E (OpenCode against production)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || !github.event.pull_request.head.repo.fork
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+
+      - name: Run installer for OpenCode
+        env:
+          AICTRL_API_KEY: ${{ secrets.AICTRL_API_KEY }}
+          E2E_DIR: ${{ runner.temp }}/e2e-project
+          WORKSPACE: ${{ github.workspace }}
+        run: |
+          mkdir -p "$E2E_DIR"
+          cd "$E2E_DIR"
+          git init
+          git remote add origin https://github.com/aictrl-dev/aictrl-plugin.git
+          node "$WORKSPACE/bin/setup.js" \
+            --org aictrl \
+            --api-key "$AICTRL_API_KEY" \
+            --editors opencode \
+            --non-interactive
+
+      - name: Verify .aictrl.json
+        env:
+          E2E_DIR: ${{ runner.temp }}/e2e-project
+        run: |
+          cd "$E2E_DIR"
+          test -f .aictrl.json
+          ORG=$(node -e "console.log(JSON.parse(require('fs').readFileSync('.aictrl.json','utf8')).orgSlug)")
+          [ "$ORG" = "aictrl" ] || { echo "Expected orgSlug=aictrl, got $ORG"; exit 1; }
+
+      - name: Verify credentials stored
+        run: |
+          test -f ~/.aictrl/credentials.json
+          PERMS=$(stat -c '%a' ~/.aictrl/credentials.json)
+          [ "$PERMS" = "600" ] || { echo "Expected 600 permissions, got $PERMS"; exit 1; }
+          HAS_ORG=$(node -e "const c=JSON.parse(require('fs').readFileSync(require('os').homedir()+'/.aictrl/credentials.json','utf8')); console.log(c.orgs.aictrl ? 'yes' : 'no')")
+          [ "$HAS_ORG" = "yes" ] || { echo "aictrl org not found in credentials"; exit 1; }
+
+      - name: Verify skills written
+        env:
+          E2E_DIR: ${{ runner.temp }}/e2e-project
+        run: |
+          cd "$E2E_DIR"
+          test -d .opencode/skills
+          SKILL_COUNT=$(find .opencode/skills -name 'SKILL.md' | wc -l)
+          echo "Found $SKILL_COUNT skills"
+          [ "$SKILL_COUNT" -gt 0 ] || { echo "No skills written"; exit 1; }
+
+      - name: Verify SKILL.md has frontmatter
+        env:
+          E2E_DIR: ${{ runner.temp }}/e2e-project
+        run: |
+          cd "$E2E_DIR"
+          FIRST_SKILL=$(find .opencode/skills -name 'SKILL.md' | head -1)
+          echo "Checking $FIRST_SKILL"
+          head -1 "$FIRST_SKILL" | grep -q '^---' || { echo "Missing YAML frontmatter"; exit 1; }
+          grep -q '^name:' "$FIRST_SKILL" || { echo "Missing name field"; exit 1; }
+
+      - name: Verify telemetry hook
+        env:
+          E2E_DIR: ${{ runner.temp }}/e2e-project
+        run: |
+          cd "$E2E_DIR"
+          test -f .opencode/hooks/skill-telemetry.sh
+          test -x .opencode/hooks/skill-telemetry.sh
+          grep -q 'send_telemetry' .opencode/hooks/skill-telemetry.sh
+
+      - name: Verify idempotent re-run
+        env:
+          E2E_DIR: ${{ runner.temp }}/e2e-project
+          WORKSPACE: ${{ github.workspace }}
+        run: |
+          cd "$E2E_DIR"
+          BEFORE=$(find .opencode/skills -name 'SKILL.md' | wc -l)
+          node "$WORKSPACE/bin/setup.js" \
+            --org aictrl \
+            --editors opencode \
+            --non-interactive
+          AFTER=$(find .opencode/skills -name 'SKILL.md' | wc -l)
+          echo "Before: $BEFORE, After: $AFTER"
+          [ "$BEFORE" = "$AFTER" ] || { echo "Skill count changed on re-run"; exit 1; }
