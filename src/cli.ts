@@ -49,8 +49,15 @@ function parseCliArgs(): CliOptions {
   };
 }
 
+const VALID_EDITORS = new Set<string>(['claude', 'opencode', 'cursor']);
+
 function parseEditors(editorsStr: string): Editor[] {
-  return editorsStr.split(',').map(e => e.trim()) as Editor[];
+  const editors = editorsStr.split(',').map(e => e.trim());
+  const invalid = editors.filter(e => !VALID_EDITORS.has(e));
+  if (invalid.length > 0) {
+    throw new Error(`Unknown editor(s): ${invalid.join(', ')}. Valid options: claude, opencode, cursor`);
+  }
+  return editors as Editor[];
 }
 
 async function resolveOrg(options: CliOptions): Promise<string> {

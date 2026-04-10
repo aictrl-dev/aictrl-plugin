@@ -1,5 +1,7 @@
 export function credentialResolverSnippet(baseUrl: string): string {
   return `# Resolve credentials from aictrl config files
+command -v jq >/dev/null 2>&1 || exit 0
+
 AICTRL_PROJECT_CONFIG=".aictrl.json"
 AICTRL_CREDENTIALS="$HOME/.aictrl/credentials.json"
 
