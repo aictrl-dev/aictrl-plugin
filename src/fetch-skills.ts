@@ -35,7 +35,7 @@ export async function fetchMarketplace(
   orgSlug: string,
   apiKey: string,
 ): Promise<MarketplaceSkill[]> {
-  const url = `${baseUrl}/${orgSlug}/${apiKey}/marketplace.json`;
+  const url = `${baseUrl}/${orgSlug}/${apiKey}/skills.git/.claude-plugin/marketplace.json`;
   const response = await fetch(url);
 
   if (response.status === 401) {
@@ -69,7 +69,7 @@ export async function fetchSkillContent(
   apiKey: string,
   skill: MarketplaceSkill,
 ): Promise<SkillContent> {
-  const pluginBase = `${baseUrl}/${orgSlug}/${apiKey}/plugins/${skill.name}`;
+  const pluginBase = `${baseUrl}/${orgSlug}/${apiKey}/skills.git/plugins/${skill.name}`;
 
   // Fetch SKILL.md
   const mdResponse = await fetch(`${pluginBase}/SKILL.md`);

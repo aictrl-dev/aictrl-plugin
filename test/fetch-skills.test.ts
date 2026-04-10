@@ -34,7 +34,7 @@ describe('fetchMarketplace', () => {
 
     await fetchMarketplace('https://aictrl.dev', 'talentrix', 'sk_live_xxx');
     expect(globalThis.fetch).toHaveBeenCalledWith(
-      'https://aictrl.dev/talentrix/sk_live_xxx/marketplace.json',
+      'https://aictrl.dev/talentrix/sk_live_xxx/skills.git/.claude-plugin/marketplace.json',
     );
   });
 
