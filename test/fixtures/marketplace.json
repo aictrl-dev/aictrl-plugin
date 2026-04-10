@@ -1,0 +1,32 @@
+{
+  "name": "talentrix-skills",
+  "owner": { "name": "Talentrix Inc" },
+  "metadata": {
+    "description": "Skills marketplace for Talentrix Inc",
+    "version": "1.0.0",
+    "pluginRoot": "plugins"
+  },
+  "plugins": [
+    {
+      "name": "code-review",
+      "source": "./plugins/code-review",
+      "description": "Review code changes",
+      "version": "1.0.0",
+      "tags": ["code", "review"]
+    },
+    {
+      "name": "tdd",
+      "source": "./plugins/tdd",
+      "description": "Test-driven development guide",
+      "version": "2.0.0",
+      "tags": ["testing"]
+    },
+    {
+      "name": "aictrl-talentrix",
+      "source": "./plugins/aictrl-talentrix",
+      "description": "AIctrl session control for Talentrix Inc",
+      "version": "1.0.0",
+      "tags": ["mcp", "aictrl"]
+    }
+  ]
+}
