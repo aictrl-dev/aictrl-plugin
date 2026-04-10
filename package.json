@@ -1,10 +1,10 @@
 {
-  "name": "@aictrl/setup",
-  "version": "0.1.0",
+  "name": "@aictrl/plugin",
+  "version": "2.0.0",
   "description": "Set up aictrl skills, telemetry, and MCP for Claude Code, OpenCode, and Cursor",
   "type": "module",
   "bin": {
-    "aictrl-setup": "bin/setup.js"
+    "aictrl-plugin": "bin/setup.js"
   },
   "scripts": {
     "build": "tsc",
