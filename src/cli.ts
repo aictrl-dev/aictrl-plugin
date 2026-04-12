@@ -16,9 +16,8 @@ import { installClaudePlugin } from './writers/claude.js';
 import { installOpenCode } from './writers/opencode.js';
 import { installCursor } from './writers/cursor.js';
 import { ensureGitignore } from './gitignore.js';
+import { printPostInstallMessage, type Editor } from './post-install-message.js';
 import type { WritableSkill } from './writers/shared.js';
-
-type Editor = 'claude' | 'opencode' | 'cursor';
 
 interface CliOptions {
   org?: string;
@@ -225,8 +224,7 @@ async function main(): Promise<void> {
     await ensureGitignore(projectDir, gitignoreEntries);
   }
 
-  console.log('  Done! Skills are ready to use.');
-  console.log('  Run npx @aictrl/setup again to update skills.\n');
+  printPostInstallMessage(orgSlug, editors);
 }
 
 main().catch((err) => {
