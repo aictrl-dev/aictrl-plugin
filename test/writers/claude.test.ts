@@ -122,6 +122,35 @@ describe('installClaudePlugin', () => {
     expect(settings.enabledPlugins['aictrl-talentrix@aictrl']).toBe(true);
   });
 
+  it('registers PostToolUse Read hook in hooks.json', async () => {
+    await installClaudePlugin({
+      orgSlug: 'talentrix',
+      skills,
+      apiKey: 'sk_live_xxx',
+      baseUrl: 'https://aictrl.dev',
+      pluginsCache,
+      settingsFile,
+    });
+
+    const pluginDir = join(pluginsCache, 'aictrl-talentrix@aictrl');
+    const pluginJson = JSON.parse(
+      await readFile(join(pluginDir, '.claude-plugin', 'plugin.json'), 'utf-8')
+    );
+    expect(pluginJson.hooks).toBe('./hooks/hooks.json');
+
+    const hooksJson = JSON.parse(
+      await readFile(join(pluginDir, 'hooks', 'hooks.json'), 'utf-8')
+    );
+    const postToolUse = hooksJson.hooks.PostToolUse;
+    expect(postToolUse).toHaveLength(1);
+    expect(postToolUse[0].matcher).toBe('Read');
+    expect(postToolUse[0].hooks[0]).toEqual({
+      type: 'command',
+      command: '${CLAUDE_PLUGIN_ROOT}/hooks/skill-telemetry.sh',
+    });
+    expect(existsSync(join(pluginDir, 'hooks', 'skill-telemetry.sh'))).toBe(true);
+  });
+
   it('clears old skills on re-install', async () => {
     await installClaudePlugin({
       orgSlug: 'talentrix',
