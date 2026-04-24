@@ -35,6 +35,7 @@ export async function installClaudePlugin(options: ClaudePluginOptions): Promise
         author: { name: 'aictrl.dev' },
         homepage: 'https://aictrl.dev',
         mcpServers: './.mcp.json',
+        hooks: './hooks/hooks.json',
       },
       null,
       2,
@@ -73,6 +74,29 @@ export async function installClaudePlugin(options: ClaudePluginOptions): Promise
   await writeFile(join(hooksDir, 'skill-telemetry.sh'), generateClaudeHook(baseUrl), {
     mode: 0o755,
   });
+  await writeFile(
+    join(hooksDir, 'hooks.json'),
+    JSON.stringify(
+      {
+        hooks: {
+          PostToolUse: [
+            {
+              matcher: 'Read',
+              hooks: [
+                {
+                  type: 'command',
+                  command: '${CLAUDE_PLUGIN_ROOT}/hooks/skill-telemetry.sh',
+                },
+              ],
+            },
+          ],
+        },
+      },
+      null,
+      2,
+    ) + '\n',
+    'utf-8',
+  );
 
   // Register plugin in settings.json
   await mergeSettings(settingsFile, pluginDirName);
