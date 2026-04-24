@@ -1,6 +1,6 @@
 {
   "name": "@aictrl/plugin",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Set up aictrl skills, telemetry, and MCP for Claude Code, OpenCode, and Cursor",
   "type": "module",
   "bin": {
@@ -16,7 +16,15 @@
     "dist",
     "bin"
   ],
-  "keywords": ["aictrl", "claude-code", "opencode", "cursor", "skills", "mcp", "setup"],
+  "keywords": [
+    "aictrl",
+    "claude-code",
+    "opencode",
+    "cursor",
+    "skills",
+    "mcp",
+    "setup"
+  ],
   "author": "aictrl.dev",
   "license": "MIT",
   "engines": {
