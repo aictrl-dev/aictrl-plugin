@@ -45,6 +45,92 @@ describe('writeSkill', () => {
   });
 });
 
+describe('writeSkill with qualified names', () => {
+  let tempDir: string;
+
+  beforeEach(async () => {
+    tempDir = await mkdtemp(join(tmpdir(), 'aictrl-test-'));
+  });
+
+  afterEach(async () => {
+    await rm(tempDir, { recursive: true });
+  });
+
+  it('accepts a qualified id and writes the folder using the bare name', async () => {
+    await writeSkill(tempDir, {
+      name: 'aictrl-dev__aictrl__kg-classify',
+      markdown: '---\nname: kg-classify\n---\n\nKG classify.',
+      files: [],
+    });
+
+    const content = await readFile(join(tempDir, 'kg-classify', 'SKILL.md'), 'utf-8');
+    expect(content).toContain('KG classify.');
+    // qualified-named folder must NOT be created
+    expect(existsSync(join(tempDir, 'aictrl-dev__aictrl__kg-classify'))).toBe(false);
+  });
+
+  it('rejects a folder collision when two qualified IDs share a bareName', async () => {
+    await writeSkill(tempDir, {
+      name: 'org1__repo1__kg-classify',
+      markdown: '# first',
+      files: [],
+    });
+
+    await expect(
+      writeSkill(tempDir, {
+        name: 'org2__repo2__kg-classify',
+        markdown: '# second',
+        files: [],
+      }),
+    ).rejects.toThrow(/collision/i);
+
+    // First skill's content must be intact (not overwritten)
+    const content = await readFile(join(tempDir, 'kg-classify', 'SKILL.md'), 'utf-8');
+    expect(content).toBe('# first');
+  });
+
+  it('rejects a malformed qualified name (one __ separator)', async () => {
+    await expect(
+      writeSkill(tempDir, {
+        name: 'aictrl-dev__kg-classify',
+        markdown: '',
+        files: [],
+      }),
+    ).rejects.toThrow(/malformed/i);
+  });
+
+  it('bare names still work unchanged', async () => {
+    await writeSkill(tempDir, {
+      name: 'plain-skill',
+      markdown: '# plain',
+      files: [],
+    });
+    const content = await readFile(join(tempDir, 'plain-skill', 'SKILL.md'), 'utf-8');
+    expect(content).toBe('# plain');
+  });
+
+  it('writes supporting files under the bare-name folder for a qualified id', async () => {
+    await writeSkill(tempDir, {
+      name: 'aictrl-dev__aictrl__kg-classify',
+      markdown: '# kg',
+      files: [{ path: 'scripts/run.sh', content: '#!/bin/bash' }],
+    });
+
+    const script = await readFile(join(tempDir, 'kg-classify', 'scripts', 'run.sh'), 'utf-8');
+    expect(script).toBe('#!/bin/bash');
+  });
+
+  it('rejects a qualified id whose bare name fails SKILL_NAME_REGEX', async () => {
+    await expect(
+      writeSkill(tempDir, {
+        name: 'aictrl-dev__aictrl__UPPERCASE',
+        markdown: '',
+        files: [],
+      }),
+    ).rejects.toThrow(/invalid/i);
+  });
+});
+
 describe('clearSkillsDir', () => {
   let tempDir: string;
 
