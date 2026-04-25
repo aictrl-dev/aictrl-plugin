@@ -41,7 +41,9 @@ done
 # (e.g. ~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/skills/<name>/SKILL.md).
 # Use depth-bounded find rather than glob.
 if [ "$FOUND" -eq 0 ] && [ -d "$HOME/.claude/plugins/cache" ]; then
-  if find "$HOME/.claude/plugins/cache" -maxdepth 6 -type f -path "*/skills/$BARE_NAME/SKILL.md" -print -quit 2>/dev/null | grep -q .; then
+  if find "$HOME/.claude/plugins/cache" -maxdepth 6 -type f \\
+      \\( -path "*/skills/$BARE_NAME/SKILL.md" -o -path "*/commands/$BARE_NAME.md" \\) \\
+      -print -quit 2>/dev/null | grep -q .; then
     FOUND=1
   fi
 fi
