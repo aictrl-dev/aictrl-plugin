@@ -27,6 +27,14 @@
   ],
   "author": "aictrl.dev",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aictrl-dev/aictrl-plugin.git"
+  },
+  "homepage": "https://github.com/aictrl-dev/aictrl-plugin#readme",
+  "bugs": {
+    "url": "https://github.com/aictrl-dev/aictrl-plugin/issues"
+  },
   "engines": {
     "node": ">=18.0.0"
   },
