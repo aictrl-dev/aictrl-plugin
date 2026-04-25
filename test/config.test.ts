@@ -19,7 +19,9 @@ describe('config', () => {
     expect(SKILL_NAME_REGEX.test('HAS-CAPS')).toBe(false);
   });
 
-  it('fetch batch size is reasonable', () => {
-    expect(FETCH_BATCH_SIZE).toBe(10);
+  it('fetch batch size is conservative to avoid 429s', () => {
+    expect(FETCH_BATCH_SIZE).toBe(4);
+    expect(FETCH_BATCH_SIZE).toBeGreaterThan(0);
+    expect(FETCH_BATCH_SIZE).toBeLessThanOrEqual(5);
   });
 });

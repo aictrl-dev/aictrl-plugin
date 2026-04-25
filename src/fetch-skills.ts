@@ -1,3 +1,55 @@
+export interface FetchWithRetryOptions {
+  /** Base delay in ms before first retry (doubles on each attempt). Default 250. */
+  delayMs?: number;
+  /** Maximum number of retry attempts. Default 3. */
+  maxRetries?: number;
+}
+
+/**
+ * Wraps `fetch` with exponential-backoff retry on 429 and 5xx responses.
+ * Honors the `Retry-After` response header when present (interpreted as seconds).
+ * Non-retryable errors (e.g. 404) are thrown immediately after the first attempt.
+ */
+export async function fetchWithRetry(
+  url: string,
+  options: FetchWithRetryOptions & RequestInit = {},
+): Promise<Response> {
+  const { delayMs = 250, maxRetries = 3, ...fetchInit } = options;
+
+  let attempt = 0;
+
+  while (true) {
+    const response = await fetch(url, fetchInit);
+
+    const shouldRetry = !response.ok && (response.status === 429 || response.status >= 500);
+
+    if (response.ok || !shouldRetry) {
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status} fetching ${url}`);
+      }
+      return response;
+    }
+
+    if (attempt >= maxRetries) {
+      throw new Error(`HTTP ${response.status} fetching ${url} (after ${attempt} retries)`);
+    }
+
+    // Determine delay: honour Retry-After header if present
+    const retryAfter = response.headers.get('Retry-After');
+    let waitMs: number;
+    if (retryAfter !== null) {
+      const parsed = parseFloat(retryAfter);
+      waitMs = isNaN(parsed) ? delayMs * Math.pow(4, attempt) : parsed * 1000;
+    } else {
+      // Exponential backoff: 250ms, 1000ms, 4000ms
+      waitMs = delayMs * Math.pow(4, attempt);
+    }
+
+    await new Promise<void>(resolve => setTimeout(resolve, waitMs));
+    attempt++;
+  }
+}
+
 export interface MarketplaceSkill {
   name: string;
   description: string;
@@ -72,15 +124,14 @@ export async function fetchSkillContent(
   const pluginBase = `${baseUrl}/${orgSlug}/${apiKey}/skills.git/plugins/${skill.name}`;
 
   // Fetch SKILL.md
-  const mdResponse = await fetch(`${pluginBase}/SKILL.md`);
-  if (!mdResponse.ok) {
-    throw new Error(`Failed to fetch SKILL.md for ${skill.name} (status ${mdResponse.status})`);
-  }
+  const mdResponse = await fetchWithRetry(`${pluginBase}/SKILL.md`);
   const markdown = await mdResponse.text();
 
   // Fetch plugin.json to check for supporting files
-  const pjResponse = await fetch(`${pluginBase}/.claude-plugin/plugin.json`);
-  if (!pjResponse.ok) {
+  let pjResponse: Response;
+  try {
+    pjResponse = await fetchWithRetry(`${pluginBase}/.claude-plugin/plugin.json`);
+  } catch {
     return { markdown, files: [] };
   }
 
@@ -94,12 +145,14 @@ export async function fetchSkillContent(
   const files: SkillFile[] = [];
 
   for (const file of supportingFiles) {
-    const fileResponse = await fetch(`${pluginBase}/${file.path}`);
-    if (fileResponse.ok) {
+    try {
+      const fileResponse = await fetchWithRetry(`${pluginBase}/${file.path}`);
       files.push({
         path: file.path,
         content: await fileResponse.text(),
       });
+    } catch {
+      // Skip files that fail even after retries
     }
   }
 
