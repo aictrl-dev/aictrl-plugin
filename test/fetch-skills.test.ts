@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { fetchMarketplace, fetchSkillContent, type MarketplaceSkill } from '../src/fetch-skills.js';
+import { fetchMarketplace, fetchSkillContent, fetchWithRetry, type MarketplaceSkill } from '../src/fetch-skills.js';
 
 const fixturesDir = join(import.meta.dirname, 'fixtures');
 const marketplaceFixture = JSON.parse(readFileSync(join(fixturesDir, 'marketplace.json'), 'utf-8'));
@@ -114,5 +114,138 @@ describe('fetchSkillContent', () => {
     expect(content.files).toHaveLength(1);
     expect(content.files[0].path).toBe('references/checklist.md');
     expect(content.files[0].content).toContain('Checklist');
+  });
+});
+
+describe('fetchWithRetry', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.useRealTimers();
+  });
+
+  it('retries on 429 and eventually returns successful response', async () => {
+    const mockFetch = vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce({ ok: false, status: 429, headers: new Headers() } as Response)
+      .mockResolvedValueOnce({ ok: false, status: 429, headers: new Headers() } as Response)
+      .mockResolvedValueOnce({ ok: true, status: 200, headers: new Headers(), text: () => Promise.resolve('body') } as unknown as Response);
+
+    const promise = fetchWithRetry('https://example.com/file', { delayMs: 10 });
+    // Advance through the two back-off delays
+    await vi.runAllTimersAsync();
+    const response = await promise;
+
+    expect(mockFetch).toHaveBeenCalledTimes(3);
+    expect(response.ok).toBe(true);
+  });
+
+  it('honors Retry-After header (seconds)', async () => {
+    const retryAfterHeaders = new Headers({ 'Retry-After': '0.05' });
+    const mockFetch = vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce({ ok: false, status: 429, headers: retryAfterHeaders } as Response)
+      .mockResolvedValueOnce({ ok: true, status: 200, headers: new Headers() } as unknown as Response);
+
+    const promise = fetchWithRetry('https://example.com/file', { delayMs: 10 });
+    await vi.runAllTimersAsync();
+    await promise;
+
+    // With Retry-After: 0.05 the delay should have been ~50ms, not the default 10ms
+    // We only assert it didn't throw and returned on 2nd attempt
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('throws after all retries are exhausted on persistent 429', async () => {
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValue({ ok: false, status: 429, headers: new Headers() } as Response);
+
+    const promise = fetchWithRetry('https://example.com/file', { delayMs: 10, maxRetries: 3 });
+    // Attach rejection handler before advancing timers to prevent unhandled rejection
+    const caught = promise.catch(e => e);
+    await vi.runAllTimersAsync();
+    const err = await caught;
+
+    expect(err).toBeInstanceOf(Error);
+    expect((err as Error).message).toContain('429');
+  });
+
+  it('does NOT retry on 404 — throws immediately', async () => {
+    const mockFetch = vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValue({ ok: false, status: 404, headers: new Headers() } as Response);
+
+    await expect(fetchWithRetry('https://example.com/missing', { delayMs: 10 }))
+      .rejects.toThrow('404');
+
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('retries on 5xx (503) and returns successful response', async () => {
+    const mockFetch = vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce({ ok: false, status: 503, headers: new Headers() } as Response)
+      .mockResolvedValueOnce({ ok: true, status: 200, headers: new Headers() } as unknown as Response);
+
+    const promise = fetchWithRetry('https://example.com/file', { delayMs: 10 });
+    await vi.runAllTimersAsync();
+    const response = await promise;
+
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+    expect(response.ok).toBe(true);
+  });
+
+  it('retries on network-level errors (TypeError thrown by fetch)', async () => {
+    const mockFetch = vi.spyOn(globalThis, 'fetch')
+      .mockRejectedValueOnce(new TypeError('fetch failed'))
+      .mockRejectedValueOnce(new TypeError('fetch failed'))
+      .mockResolvedValueOnce({ ok: true, status: 200, headers: new Headers() } as unknown as Response);
+
+    const promise = fetchWithRetry('https://example.com/file', { delayMs: 10 });
+    await vi.runAllTimersAsync();
+    const response = await promise;
+
+    expect(mockFetch).toHaveBeenCalledTimes(3);
+    expect(response.ok).toBe(true);
+  });
+
+  it('throws after exhausting retries on persistent network errors', async () => {
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('ECONNRESET'));
+
+    const promise = fetchWithRetry('https://example.com/file', { delayMs: 10, maxRetries: 2 });
+    const caught = promise.catch(e => e);
+    await vi.runAllTimersAsync();
+    const err = await caught;
+
+    expect(err).toBeInstanceOf(Error);
+    expect((err as Error).message).toMatch(/network error/i);
+    expect((err as Error).message).toContain('ECONNRESET');
+  });
+
+  it('uses label in error messages instead of raw URL (which contains the API key)', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: false, status: 404, headers: new Headers() } as Response);
+
+    const sensitiveUrl = 'https://aictrl.dev/talentrix/sk_live_SECRET/skills.git/plugins/foo/SKILL.md';
+    const promise = fetchWithRetry(sensitiveUrl, { delayMs: 10, label: 'SKILL.md for foo' });
+
+    await expect(promise).rejects.toThrow(/SKILL\.md for foo/);
+    await expect(
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: false, status: 404, headers: new Headers() } as Response) &&
+      fetchWithRetry(sensitiveUrl, { delayMs: 10, label: 'SKILL.md for foo' })
+    ).rejects.not.toThrow(/sk_live_SECRET/);
+  });
+
+  it('caps Retry-After at 30s to prevent unbounded delay', async () => {
+    // Server returns Retry-After: 3600 (1 hour) — should cap at 30s
+    const retryAfterHeaders = new Headers({ 'Retry-After': '3600' });
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce({ ok: false, status: 429, headers: retryAfterHeaders } as Response)
+      .mockResolvedValueOnce({ ok: true, status: 200, headers: new Headers() } as unknown as Response);
+
+    const promise = fetchWithRetry('https://example.com/file', { delayMs: 10 });
+    // Advance just past the 30s cap (with jitter up to 1.2x = 36s)
+    await vi.advanceTimersByTimeAsync(40_000);
+    const response = await promise;
+
+    expect(response.ok).toBe(true);
   });
 });

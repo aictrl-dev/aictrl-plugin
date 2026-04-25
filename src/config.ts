@@ -19,4 +19,6 @@ export const CURSOR_MCP_FILE = '.cursor/mcp.json';
 
 export const SKILL_NAME_REGEX = /^[a-z0-9][a-z0-9-]{0,98}[a-z0-9]$/;
 
-export const FETCH_BATCH_SIZE = 10;
+// 4 concurrent skill fetches: conservative enough to avoid 429s on the marketplace endpoint
+// (each skill needs 2–N requests; 4 parallel × ~3 requests = ~12 in-flight max)
+export const FETCH_BATCH_SIZE = 4;
