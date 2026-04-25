@@ -1,7 +1,9 @@
 import { SKILL_NAME_REGEX } from './config.js';
 
 // A GitHub identifier: lowercase alphanumeric + hyphens, must start/end with alphanumeric.
-// We reuse the same shape as SKILL_NAME_REGEX for owner/repo segments.
+// Similar to SKILL_NAME_REGEX but with an extra `|^[a-z0-9]$` branch to allow
+// single-character identifiers — GitHub permits 1-char org/repo names, whereas
+// SKILL_NAME_REGEX requires length >= 2.
 const GH_IDENT_REGEX = /^[a-z0-9][a-z0-9-]{0,98}[a-z0-9]$|^[a-z0-9]$/;
 
 const SEPARATOR = '__';

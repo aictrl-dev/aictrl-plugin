@@ -66,8 +66,27 @@ describe('writeSkill with qualified names', () => {
     const content = await readFile(join(tempDir, 'kg-classify', 'SKILL.md'), 'utf-8');
     expect(content).toContain('KG classify.');
     // qualified-named folder must NOT be created
-    const { existsSync } = await import('fs');
     expect(existsSync(join(tempDir, 'aictrl-dev__aictrl__kg-classify'))).toBe(false);
+  });
+
+  it('rejects a folder collision when two qualified IDs share a bareName', async () => {
+    await writeSkill(tempDir, {
+      name: 'org1__repo1__kg-classify',
+      markdown: '# first',
+      files: [],
+    });
+
+    await expect(
+      writeSkill(tempDir, {
+        name: 'org2__repo2__kg-classify',
+        markdown: '# second',
+        files: [],
+      }),
+    ).rejects.toThrow(/collision/i);
+
+    // First skill's content must be intact (not overwritten)
+    const content = await readFile(join(tempDir, 'kg-classify', 'SKILL.md'), 'utf-8');
+    expect(content).toBe('# first');
   });
 
   it('rejects a malformed qualified name (one __ separator)', async () => {

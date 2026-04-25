@@ -20,8 +20,19 @@ export async function writeSkill(skillsDir: string, skill: WritableSkill): Promi
   }
 
   const skillDir = join(skillsDir, folderName);
+  const skillMdPath = join(skillDir, 'SKILL.md');
+
+  // Detect collisions: two qualified IDs sharing a bareName (e.g.
+  // org1__repo1__kg-classify and org2__repo2__kg-classify) would silently
+  // overwrite each other. Fail loud instead — caller can decide policy.
+  if (existsSync(skillMdPath)) {
+    throw new Error(
+      `Skill folder collision at "${folderName}" — refusing to overwrite ${skillMdPath} (incoming skill: ${skill.name})`,
+    );
+  }
+
   await mkdir(skillDir, { recursive: true });
-  await writeFile(join(skillDir, 'SKILL.md'), skill.markdown, 'utf-8');
+  await writeFile(skillMdPath, skill.markdown, 'utf-8');
 
   for (const file of skill.files) {
     if (file.path.includes('..')) {
