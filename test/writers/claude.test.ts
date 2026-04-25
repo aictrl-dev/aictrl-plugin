@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtemp, rm, readFile, mkdir, writeFile } from 'fs/promises';
+import { mkdtemp, rm, readFile, mkdir, writeFile, stat } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { existsSync } from 'fs';
@@ -149,6 +149,41 @@ describe('installClaudePlugin', () => {
       command: '${CLAUDE_PLUGIN_ROOT}/hooks/skill-telemetry.sh',
     });
     expect(existsSync(join(pluginDir, 'hooks', 'skill-telemetry.sh'))).toBe(true);
+  });
+
+  it('registers UserPromptSubmit slash-command hook in hooks.json', async () => {
+    await installClaudePlugin({
+      orgSlug: 'talentrix',
+      skills,
+      apiKey: 'sk_live_xxx',
+      baseUrl: 'https://aictrl.dev',
+      pluginsCache,
+      settingsFile,
+    });
+
+    const pluginDir = join(pluginsCache, 'aictrl-talentrix@aictrl');
+    const hooksJson = JSON.parse(
+      await readFile(join(pluginDir, 'hooks', 'hooks.json'), 'utf-8'),
+    );
+
+    expect(hooksJson.hooks.PostToolUse).toBeDefined();
+    expect(hooksJson.hooks.UserPromptSubmit).toBeDefined();
+    expect(hooksJson.hooks.UserPromptSubmit).toHaveLength(1);
+
+    const userPromptSubmit = hooksJson.hooks.UserPromptSubmit[0];
+    // No matcher field — UserPromptSubmit has no tool name to match.
+    expect(userPromptSubmit.matcher).toBeUndefined();
+    expect(userPromptSubmit.hooks[0]).toEqual({
+      type: 'command',
+      command: '${CLAUDE_PLUGIN_ROOT}/hooks/slash-command-telemetry.sh',
+    });
+
+    const slashHook = join(pluginDir, 'hooks', 'slash-command-telemetry.sh');
+    expect(existsSync(slashHook)).toBe(true);
+
+    // Verify executable mode (0o755). Mask to permission bits.
+    const info = await stat(slashHook);
+    expect(info.mode & 0o777).toBe(0o755);
   });
 
   it('clears old skills on re-install', async () => {

@@ -2,6 +2,7 @@ import { writeFile, mkdir, readFile, chmod } from 'fs/promises';
 import { join } from 'path';
 import { writeSkill, clearSkillsDir, type WritableSkill } from './shared.js';
 import { generateClaudeHook } from '../hooks/claude.sh.js';
+import { generateClaudeSlashCommandHook } from '../hooks/claude-slash.sh.js';
 
 export interface ClaudePluginOptions {
   orgSlug: string;
@@ -75,6 +76,11 @@ export async function installClaudePlugin(options: ClaudePluginOptions): Promise
     mode: 0o755,
   });
   await writeFile(
+    join(hooksDir, 'slash-command-telemetry.sh'),
+    generateClaudeSlashCommandHook(baseUrl),
+    { mode: 0o755 },
+  );
+  await writeFile(
     join(hooksDir, 'hooks.json'),
     JSON.stringify(
       {
@@ -86,6 +92,16 @@ export async function installClaudePlugin(options: ClaudePluginOptions): Promise
                 {
                   type: 'command',
                   command: '${CLAUDE_PLUGIN_ROOT}/hooks/skill-telemetry.sh',
+                },
+              ],
+            },
+          ],
+          UserPromptSubmit: [
+            {
+              hooks: [
+                {
+                  type: 'command',
+                  command: '${CLAUDE_PLUGIN_ROOT}/hooks/slash-command-telemetry.sh',
                 },
               ],
             },
