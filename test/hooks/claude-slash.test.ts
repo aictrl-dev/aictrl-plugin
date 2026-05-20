@@ -41,8 +41,11 @@ describe('generateClaudeSlashCommandHook (static assertions)', () => {
     expect(script).toContain('"$PROJECT_ROOT/.claude/commands/$BARE_NAME.md"');
   });
 
-  it('uses depth-bounded find for plugin-cache lookup', () => {
-    expect(script).toContain('find "$HOME/.claude/plugins/cache" -maxdepth 6');
+  it('uses depth-bounded find for plugin-cache and marketplaces lookup', () => {
+    expect(script).toContain(
+      'find "$HOME/.claude/plugins/cache" "$HOME/.claude/plugins/marketplaces"',
+    );
+    expect(script).toContain('-maxdepth 7');
     expect(script).toContain('-print -quit');
   });
 

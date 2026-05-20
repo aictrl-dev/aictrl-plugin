@@ -5,7 +5,7 @@ import {
   DEFAULT_BASE_URL,
   CREDENTIALS_FILE,
   PROJECT_CONFIG_FILE,
-  CLAUDE_PLUGINS_CACHE,
+  CLAUDE_PLUGINS_ROOT,
   CLAUDE_SETTINGS_FILE,
   FETCH_BATCH_SIZE,
 } from './config.js';
@@ -183,7 +183,7 @@ async function main(): Promise<void> {
       skills,
       apiKey,
       baseUrl: options.baseUrl,
-      pluginsCache: CLAUDE_PLUGINS_CACHE,
+      pluginsRoot: CLAUDE_PLUGINS_ROOT,
       settingsFile: CLAUDE_SETTINGS_FILE,
     });
     console.log(`    ✓ Installed plugin aictrl-${orgSlug} (${skills.length} skills)`);

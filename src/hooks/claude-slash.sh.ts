@@ -37,11 +37,13 @@ for path in \\
   if [ -f "$path" ]; then FOUND=1; break; fi
 done
 
-# Plugin cache paths can be 4+ levels deep
-# (e.g. ~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/skills/<name>/SKILL.md).
+# Plugin paths can be 4+ levels deep under either:
+#   ~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/skills/<name>/SKILL.md
+#   ~/.claude/plugins/marketplaces/<marketplace>/plugins/<plugin>/skills/<name>/SKILL.md
 # Use depth-bounded find rather than glob.
-if [ "$FOUND" -eq 0 ] && [ -d "$HOME/.claude/plugins/cache" ]; then
-  if find "$HOME/.claude/plugins/cache" -maxdepth 6 -type f \\
+if [ "$FOUND" -eq 0 ] && [ -d "$HOME/.claude/plugins" ]; then
+  if find "$HOME/.claude/plugins/cache" "$HOME/.claude/plugins/marketplaces" \\
+      -maxdepth 7 -type f \\
       \\( -path "*/skills/$BARE_NAME/SKILL.md" -o -path "*/commands/$BARE_NAME.md" \\) \\
       -print -quit 2>/dev/null | grep -q .; then
     FOUND=1
