@@ -1,5 +1,4 @@
 import { writeFile, mkdir, readFile, chmod, rm } from 'fs/promises';
-import { existsSync } from 'fs';
 import { join } from 'path';
 import { writeSkill, clearSkillsDir, type WritableSkill } from './shared.js';
 import { generateClaudeHook } from '../hooks/claude.sh.js';
@@ -17,6 +16,11 @@ export interface ClaudePluginOptions {
 const MARKETPLACE_NAME = 'aictrl';
 const PLUGIN_VERSION = '1.0.0';
 
+// orgSlug is interpolated into filesystem paths, URLs, MCP server names and
+// shell hooks. Reject anything that could escape the plugin tree or hijack
+// path resolution. Mirrors the slug shape published by aictrl.dev.
+const ORG_SLUG_REGEX = /^[a-z0-9][a-z0-9-]{0,62}$/;
+
 interface InstalledPluginEntry {
   scope: string;
   installPath: string;
@@ -32,6 +36,11 @@ interface InstalledPluginsFile {
 
 export async function installClaudePlugin(options: ClaudePluginOptions): Promise<void> {
   const { orgSlug, skills, apiKey, baseUrl, pluginsRoot, settingsFile } = options;
+  if (!ORG_SLUG_REGEX.test(orgSlug)) {
+    throw new Error(
+      `Invalid orgSlug "${orgSlug}": must match ${ORG_SLUG_REGEX} (lowercase alphanumeric and hyphens, 1–63 chars).`,
+    );
+  }
   const pluginId = `aictrl-${orgSlug}`;
   const pluginDirName = `${pluginId}@${MARKETPLACE_NAME}`;
 
@@ -44,10 +53,9 @@ export async function installClaudePlugin(options: ClaudePluginOptions): Promise
   // Pre-v2.2 of this installer wrote the plugin to ~/.claude/plugins/cache/<plugin>@aictrl/
   // without registering the `aictrl` marketplace, leaving Claude Code unable to resolve
   // the enablement entry. Remove that stale directory on upgrade (#18).
+  // rm with force:true is a no-op when the path is missing, so no existsSync check needed.
   const legacyCacheDir = join(pluginsRoot, 'cache', pluginDirName);
-  if (existsSync(legacyCacheDir)) {
-    await rm(legacyCacheDir, { recursive: true, force: true });
-  }
+  await rm(legacyCacheDir, { recursive: true, force: true });
 
   // Clear and recreate skills directory
   await clearSkillsDir(skillsDir);
@@ -173,7 +181,9 @@ async function writeMarketplaceManifest(
   };
   try {
     const parsed = JSON.parse(await readFile(manifestPath, 'utf-8'));
-    if (parsed && typeof parsed === 'object') {
+    // typeof [] === 'object', so guard against an array-shaped file
+    // polluting the manifest with numeric-indexed keys.
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
       manifest = { ...manifest, ...parsed };
       if (!Array.isArray(manifest.plugins)) manifest.plugins = [];
     }
@@ -204,7 +214,11 @@ async function mergeKnownMarketplace(
   let data: Record<string, unknown> = {};
   try {
     const parsed = JSON.parse(await readFile(file, 'utf-8'));
-    if (parsed && typeof parsed === 'object') data = parsed;
+    // typeof [] === 'object' — refuse an array-shaped file so that the named
+    // property we assign below isn't silently dropped by JSON.stringify.
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      data = parsed as Record<string, unknown>;
+    }
   } catch {
     // No existing file or malformed — start fresh.
   }
@@ -228,11 +242,17 @@ async function mergeInstalledPlugin(
   let data: InstalledPluginsFile = { version: 2, plugins: {} };
   try {
     const parsed = JSON.parse(await readFile(file, 'utf-8'));
-    if (parsed && typeof parsed === 'object') {
+    if (
+      parsed &&
+      typeof parsed === 'object' &&
+      !Array.isArray(parsed)
+    ) {
       data = {
         version: typeof parsed.version === 'number' ? parsed.version : 2,
         plugins:
-          parsed.plugins && typeof parsed.plugins === 'object' ? parsed.plugins : {},
+          parsed.plugins && typeof parsed.plugins === 'object' && !Array.isArray(parsed.plugins)
+            ? parsed.plugins
+            : {},
       };
     }
   } catch {
@@ -240,13 +260,18 @@ async function mergeInstalledPlugin(
   }
 
   const now = new Date().toISOString();
-  const existing = data.plugins[pluginKey]?.[0];
+  const existingEntries = Array.isArray(data.plugins[pluginKey]) ? data.plugins[pluginKey] : [];
+  const existingUser = existingEntries.find((e) => e?.scope === 'user');
+  // Replace only the user-scope entry; preserve any other-scope entries that
+  // a future Claude Code version (or another install path) might have written.
+  const otherScopes = existingEntries.filter((e) => e?.scope !== 'user');
   data.plugins[pluginKey] = [
+    ...otherScopes,
     {
       scope: 'user',
       installPath,
       version: PLUGIN_VERSION,
-      installedAt: existing?.installedAt ?? now,
+      installedAt: existingUser?.installedAt ?? now,
       lastUpdated: now,
     },
   ];

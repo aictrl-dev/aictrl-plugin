@@ -8,7 +8,6 @@ export const CREDENTIALS_FILE = join(homedir(), '.aictrl', 'credentials.json');
 export const PROJECT_CONFIG_FILE = '.aictrl.json';
 
 export const CLAUDE_PLUGINS_ROOT = join(homedir(), '.claude', 'plugins');
-export const CLAUDE_PLUGINS_CACHE = join(CLAUDE_PLUGINS_ROOT, 'cache');
 export const CLAUDE_SETTINGS_FILE = join(homedir(), '.claude', 'settings.json');
 
 export const OPENCODE_SKILLS_DIR = '.opencode/skills';

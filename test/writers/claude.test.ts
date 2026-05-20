@@ -398,4 +398,137 @@ describe('installClaudePlugin', () => {
     // And the canonical location is populated:
     expect(existsSync(join(pluginPath(pluginsRoot), '.claude-plugin', 'plugin.json'))).toBe(true);
   });
+
+  // ---------------------------------------------------------------------------
+  // Regression tests for PR #19 review feedback
+  // ---------------------------------------------------------------------------
+
+  it('rejects orgSlug containing path-traversal sequences', async () => {
+    for (const bad of ['../evil', '../../escape', 'foo/bar', 'foo\\bar', 'foo bar', '', 'UPPER']) {
+      await expect(
+        installClaudePlugin({
+          orgSlug: bad,
+          skills,
+          apiKey: 'sk_live_xxx',
+          baseUrl: 'https://aictrl.dev',
+          pluginsRoot,
+          settingsFile,
+        }),
+      ).rejects.toThrow(/Invalid orgSlug/);
+    }
+  });
+
+  it('legacy cleanup is a no-op when the cache dir does not exist', async () => {
+    // Pre-fix state is irrelevant for fresh installs — the rm({force:true})
+    // path must not throw when there is nothing to remove.
+    await expect(
+      installClaudePlugin({
+        orgSlug: 'talentrix',
+        skills,
+        apiKey: 'sk_live_xxx',
+        baseUrl: 'https://aictrl.dev',
+        pluginsRoot,
+        settingsFile,
+      }),
+    ).resolves.toBeUndefined();
+  });
+
+  it('does not pollute marketplace.json when the existing file is a JSON array', async () => {
+    // Corrupt manifest (someone hand-edits the file into an array form).
+    const manifestPath = join(
+      pluginsRoot,
+      'marketplaces',
+      'aictrl',
+      '.claude-plugin',
+      'marketplace.json',
+    );
+    await mkdir(join(manifestPath, '..'), { recursive: true });
+    await writeFile(manifestPath, JSON.stringify(['junk', 'array', 'content']));
+
+    await installClaudePlugin({
+      orgSlug: 'talentrix',
+      skills,
+      apiKey: 'sk_live_xxx',
+      baseUrl: 'https://aictrl.dev',
+      pluginsRoot,
+      settingsFile,
+    });
+
+    const manifest = JSON.parse(await readFile(manifestPath, 'utf-8'));
+    // No numeric-indexed pollution from spreading an array as an object.
+    expect(manifest['0']).toBeUndefined();
+    expect(manifest['1']).toBeUndefined();
+    expect(manifest.name).toBe('aictrl');
+    expect(Array.isArray(manifest.plugins)).toBe(true);
+    expect(manifest.plugins.find((p: { name: string }) => p.name === 'aictrl-talentrix')).toBeDefined();
+  });
+
+  it('does not lose the aictrl entry when known_marketplaces.json is a JSON array', async () => {
+    await mkdir(pluginsRoot, { recursive: true });
+    const knownPath = join(pluginsRoot, 'known_marketplaces.json');
+    // Corrupt file in array shape — assigning `data[NAME] = {...}` to an
+    // array would silently drop the named key on the next JSON.stringify.
+    await writeFile(knownPath, JSON.stringify(['bogus']));
+
+    await installClaudePlugin({
+      orgSlug: 'talentrix',
+      skills,
+      apiKey: 'sk_live_xxx',
+      baseUrl: 'https://aictrl.dev',
+      pluginsRoot,
+      settingsFile,
+    });
+
+    const known = JSON.parse(await readFile(knownPath, 'utf-8'));
+    expect(Array.isArray(known)).toBe(false);
+    expect(known.aictrl).toBeDefined();
+    expect(known.aictrl.installLocation).toBe(
+      join(pluginsRoot, 'marketplaces', 'aictrl'),
+    );
+  });
+
+  it('preserves non-user-scope entries in installed_plugins.json across re-install', async () => {
+    // Seed a project-scope install written by some future Claude Code version
+    // (or another tool). The installer should only replace the user-scope row.
+    await mkdir(pluginsRoot, { recursive: true });
+    const installedPath = join(pluginsRoot, 'installed_plugins.json');
+    const seed = {
+      version: 2,
+      plugins: {
+        'aictrl-talentrix@aictrl': [
+          {
+            scope: 'project',
+            installPath: '/some/project/path',
+            version: '0.9.0',
+            installedAt: '2026-01-01T00:00:00.000Z',
+            lastUpdated: '2026-01-01T00:00:00.000Z',
+          },
+        ],
+      },
+    };
+    await writeFile(installedPath, JSON.stringify(seed));
+
+    await installClaudePlugin({
+      orgSlug: 'talentrix',
+      skills,
+      apiKey: 'sk_live_xxx',
+      baseUrl: 'https://aictrl.dev',
+      pluginsRoot,
+      settingsFile,
+    });
+
+    const installed = JSON.parse(await readFile(installedPath, 'utf-8'));
+    const entries = installed.plugins['aictrl-talentrix@aictrl'];
+    expect(entries).toHaveLength(2);
+
+    const project = entries.find((e: { scope: string }) => e.scope === 'project');
+    expect(project).toBeDefined();
+    expect(project.installPath).toBe('/some/project/path');
+    expect(project.installedAt).toBe('2026-01-01T00:00:00.000Z');
+
+    const user = entries.find((e: { scope: string }) => e.scope === 'user');
+    expect(user).toBeDefined();
+    expect(user.installPath).toBe(pluginPath(pluginsRoot));
+    expect(user.version).toBe('1.0.0');
+  });
 });
