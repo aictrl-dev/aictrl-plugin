@@ -1,4 +1,4 @@
-import { writeFile, mkdir, readFile, chmod, rm } from 'fs/promises';
+import { writeFile, mkdir, readFile, chmod, rm, rename } from 'fs/promises';
 import { join } from 'path';
 import { writeSkill, clearSkillsDir, type WritableSkill } from './shared.js';
 import { generateClaudeHook } from '../hooks/claude.sh.js';
@@ -17,7 +17,10 @@ export interface ClaudePluginOptions {
   userSettingsFile: string;
 }
 
-const PROJECT_SETTINGS_RELPATH = join('.claude', 'settings.local.json');
+// Forward-slash literal: this value is written verbatim into the project
+// .gitignore, which only matches POSIX-style separators. Node's path API
+// happily accepts forward slashes on Windows for filesystem operations.
+const PROJECT_SETTINGS_RELPATH = '.claude/settings.local.json';
 
 const MARKETPLACE_NAME = 'aictrl';
 const PLUGIN_VERSION = '1.0.0';
@@ -174,6 +177,8 @@ export async function installClaudePlugin(options: ClaudePluginOptions): Promise
   // Migration: remove this org's enablement entry from user-scope settings.json
   // if a pre-#20 install put it there. Leaves unrelated entries (incl. other
   // orgs, which get migrated when their own repo is installed) alone.
+  // Runs unconditionally every install — cheap (one small file read) and self-
+  // healing if a stale entry returns via backup restore or manual edit.
   await removeUserScopeEnablement(userSettingsFile, pluginDirName);
 
   // The project settings.local.json file is per-developer; gitignore it so
@@ -315,7 +320,7 @@ async function mergeSettings(settingsFile: string, pluginDirName: string): Promi
   settings.enabledPlugins = enabledPlugins;
 
   await mkdir(join(settingsFile, '..'), { recursive: true });
-  await writeFile(settingsFile, JSON.stringify(settings, null, 2) + '\n', 'utf-8');
+  await writeJsonAtomic(settingsFile, settings);
 }
 
 async function removeUserScopeEnablement(
@@ -351,5 +356,15 @@ async function removeUserScopeEnablement(
   }
 
   delete (enabledPlugins as Record<string, unknown>)[pluginDirName];
-  await writeFile(userSettingsFile, JSON.stringify(settings, null, 2) + '\n', 'utf-8');
+  // ~/.claude/settings.json is user-global and contains state we did not author
+  // (theme, hooks, other plugins). A non-atomic writeFile mid-power-loss could
+  // truncate the file to zero bytes. Use a temp file + rename so the original
+  // stays intact until the new content is fully durable.
+  await writeJsonAtomic(userSettingsFile, settings);
+}
+
+async function writeJsonAtomic(filePath: string, data: unknown): Promise<void> {
+  const tmp = `${filePath}.tmp`;
+  await writeFile(tmp, JSON.stringify(data, null, 2) + '\n', 'utf-8');
+  await rename(tmp, filePath);
 }

@@ -739,7 +739,7 @@ describe('installClaudePlugin', () => {
     expect(user.enabledPlugins['aictrl-celliq@aictrl']).toBeUndefined();
   });
 
-  it('adds .claude/settings.local.json to project .gitignore', async () => {
+  it('adds .claude/settings.local.json to project .gitignore using POSIX separators', async () => {
     await installClaudePlugin({
       orgSlug: 'talentrix',
       skills,
@@ -753,9 +753,77 @@ describe('installClaudePlugin', () => {
     const gitignorePath = join(projectDir, '.gitignore');
     expect(existsSync(gitignorePath)).toBe(true);
     const gitignore = await readFile(gitignorePath, 'utf-8');
+    // Git only matches POSIX separators in .gitignore — must NOT contain a
+    // backslash, which path.join('.claude','settings.local.json') would
+    // produce on Windows.
+    expect(gitignore).not.toMatch(/\\/);
     expect(gitignore.split('\n').map((l) => l.trim())).toContain(
       '.claude/settings.local.json',
     );
+  });
+
+  // ---------------------------------------------------------------------------
+  // Regression tests for PR #21 review feedback
+  // ---------------------------------------------------------------------------
+
+  it('writes user-scope settings.json atomically (no .tmp file remains on success)', async () => {
+    // The user settings file contains state we did not author (theme, hooks,
+    // other plugins). A non-atomic writeFile mid-power-loss could truncate it
+    // to zero bytes. The implementation writes to <file>.tmp then renames —
+    // verify the temp file does not leak on the happy path.
+    await mkdir(join(tempHome, '.claude'), { recursive: true });
+    await writeFile(
+      userSettingsFile,
+      JSON.stringify({
+        enabledPlugins: { 'aictrl-talentrix@aictrl': true },
+        theme: 'dark',
+      }),
+    );
+
+    await installClaudePlugin({
+      orgSlug: 'talentrix',
+      skills,
+      apiKey: 'sk_live_xxx',
+      baseUrl: 'https://aictrl.dev',
+      pluginsRoot,
+      projectDir,
+      userSettingsFile,
+    });
+
+    expect(existsSync(`${userSettingsFile}.tmp`)).toBe(false);
+    expect(existsSync(`${projectSettingsFile}.tmp`)).toBe(false);
+
+    // And the file's contents are intact + correctly updated.
+    const user = JSON.parse(await readFile(userSettingsFile, 'utf-8'));
+    expect(user.theme).toBe('dark');
+    expect(user.enabledPlugins['aictrl-talentrix@aictrl']).toBeUndefined();
+  });
+
+  it('survives a pre-existing user settings.json with a stale .tmp sibling', async () => {
+    // If a previous run was killed mid-write, the .tmp file could still be on
+    // disk. The atomic write should overwrite it cleanly, not throw.
+    await mkdir(join(tempHome, '.claude'), { recursive: true });
+    await writeFile(
+      userSettingsFile,
+      JSON.stringify({ enabledPlugins: { 'aictrl-talentrix@aictrl': true } }),
+    );
+    await writeFile(`${userSettingsFile}.tmp`, 'leftover from crashed write');
+
+    await expect(
+      installClaudePlugin({
+        orgSlug: 'talentrix',
+        skills,
+        apiKey: 'sk_live_xxx',
+        baseUrl: 'https://aictrl.dev',
+        pluginsRoot,
+        projectDir,
+        userSettingsFile,
+      }),
+    ).resolves.toBeUndefined();
+
+    expect(existsSync(`${userSettingsFile}.tmp`)).toBe(false);
+    const user = JSON.parse(await readFile(userSettingsFile, 'utf-8'));
+    expect(user.enabledPlugins['aictrl-talentrix@aictrl']).toBeUndefined();
   });
 
   it('multi-org: two project dirs each get only their own org enabled', async () => {
