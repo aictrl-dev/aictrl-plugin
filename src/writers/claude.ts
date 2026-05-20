@@ -1,8 +1,9 @@
-import { writeFile, mkdir, readFile, chmod, rm } from 'fs/promises';
+import { writeFile, mkdir, readFile, chmod, rm, rename } from 'fs/promises';
 import { join } from 'path';
 import { writeSkill, clearSkillsDir, type WritableSkill } from './shared.js';
 import { generateClaudeHook } from '../hooks/claude.sh.js';
 import { generateClaudeSlashCommandHook } from '../hooks/claude-slash.sh.js';
+import { ensureGitignore } from '../gitignore.js';
 
 export interface ClaudePluginOptions {
   orgSlug: string;
@@ -10,8 +11,16 @@ export interface ClaudePluginOptions {
   apiKey: string;
   baseUrl: string;
   pluginsRoot: string;
-  settingsFile: string;
+  /** Project root; enablement is written to `<projectDir>/.claude/settings.local.json`. */
+  projectDir: string;
+  /** Path to `~/.claude/settings.json`; consulted only to clean up legacy user-scope enablement entries. */
+  userSettingsFile: string;
 }
+
+// Forward-slash literal: this value is written verbatim into the project
+// .gitignore, which only matches POSIX-style separators. Node's path API
+// happily accepts forward slashes on Windows for filesystem operations.
+const PROJECT_SETTINGS_RELPATH = '.claude/settings.local.json';
 
 const MARKETPLACE_NAME = 'aictrl';
 const PLUGIN_VERSION = '1.0.0';
@@ -35,7 +44,7 @@ interface InstalledPluginsFile {
 }
 
 export async function installClaudePlugin(options: ClaudePluginOptions): Promise<void> {
-  const { orgSlug, skills, apiKey, baseUrl, pluginsRoot, settingsFile } = options;
+  const { orgSlug, skills, apiKey, baseUrl, pluginsRoot, projectDir, userSettingsFile } = options;
   if (!ORG_SLUG_REGEX.test(orgSlug)) {
     throw new Error(
       `Invalid orgSlug "${orgSlug}": must match ${ORG_SLUG_REGEX} (lowercase alphanumeric and hyphens, 1–63 chars).`,
@@ -159,8 +168,22 @@ export async function installClaudePlugin(options: ClaudePluginOptions): Promise
   await mergeKnownMarketplace(pluginsRoot, marketplaceDir);
   await mergeInstalledPlugin(pluginsRoot, pluginDirName, pluginDir);
 
-  // Register plugin in settings.json
-  await mergeSettings(settingsFile, pluginDirName);
+  // Enable the plugin in PROJECT scope so each repo gets only its own org's
+  // MCP + skills (#20). Pre-#20 versions wrote enablement to user scope, which
+  // loaded every installed org in every Claude Code session.
+  const projectSettingsFile = join(projectDir, PROJECT_SETTINGS_RELPATH);
+  await mergeSettings(projectSettingsFile, pluginDirName);
+
+  // Migration: remove this org's enablement entry from user-scope settings.json
+  // if a pre-#20 install put it there. Leaves unrelated entries (incl. other
+  // orgs, which get migrated when their own repo is installed) alone.
+  // Runs unconditionally every install — cheap (one small file read) and self-
+  // healing if a stale entry returns via backup restore or manual edit.
+  await removeUserScopeEnablement(userSettingsFile, pluginDirName);
+
+  // The project settings.local.json file is per-developer; gitignore it so
+  // committing the repo does not leak enablement state across the team.
+  await ensureGitignore(projectDir, [PROJECT_SETTINGS_RELPATH]);
 }
 
 async function writeMarketplaceManifest(
@@ -284,7 +307,10 @@ async function mergeSettings(settingsFile: string, pluginDirName: string): Promi
   let settings: Record<string, unknown> = {};
   try {
     const content = await readFile(settingsFile, 'utf-8');
-    settings = JSON.parse(content);
+    const parsed = JSON.parse(content);
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      settings = parsed as Record<string, unknown>;
+    }
   } catch {
     // File doesn't exist or is invalid — start fresh
   }
@@ -294,5 +320,51 @@ async function mergeSettings(settingsFile: string, pluginDirName: string): Promi
   settings.enabledPlugins = enabledPlugins;
 
   await mkdir(join(settingsFile, '..'), { recursive: true });
-  await writeFile(settingsFile, JSON.stringify(settings, null, 2) + '\n', 'utf-8');
+  await writeJsonAtomic(settingsFile, settings);
+}
+
+async function removeUserScopeEnablement(
+  userSettingsFile: string,
+  pluginDirName: string,
+): Promise<void> {
+  let content: string;
+  try {
+    content = await readFile(userSettingsFile, 'utf-8');
+  } catch {
+    // No user settings file — nothing to migrate.
+    return;
+  }
+
+  let settings: Record<string, unknown>;
+  try {
+    const parsed = JSON.parse(content);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return;
+    settings = parsed as Record<string, unknown>;
+  } catch {
+    // Malformed user settings — don't touch it.
+    return;
+  }
+
+  const enabledPlugins = settings.enabledPlugins;
+  if (
+    !enabledPlugins ||
+    typeof enabledPlugins !== 'object' ||
+    Array.isArray(enabledPlugins) ||
+    !(pluginDirName in (enabledPlugins as Record<string, unknown>))
+  ) {
+    return;
+  }
+
+  delete (enabledPlugins as Record<string, unknown>)[pluginDirName];
+  // ~/.claude/settings.json is user-global and contains state we did not author
+  // (theme, hooks, other plugins). A non-atomic writeFile mid-power-loss could
+  // truncate the file to zero bytes. Use a temp file + rename so the original
+  // stays intact until the new content is fully durable.
+  await writeJsonAtomic(userSettingsFile, settings);
+}
+
+async function writeJsonAtomic(filePath: string, data: unknown): Promise<void> {
+  const tmp = `${filePath}.tmp`;
+  await writeFile(tmp, JSON.stringify(data, null, 2) + '\n', 'utf-8');
+  await rename(tmp, filePath);
 }
