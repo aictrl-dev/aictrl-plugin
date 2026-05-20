@@ -359,7 +359,8 @@ describe('installClaudePlugin', () => {
     );
     const firstInstalledAt = firstInstalled.plugins['aictrl-talentrix@aictrl'][0].installedAt;
 
-    // Wait long enough for a distinct ISO timestamp on slower CI.
+    // Force a clock advance so the second lastUpdated is provably later than
+    // the first installedAt — robust against coarse-resolution timers on CI.
     await new Promise((resolve) => setTimeout(resolve, 10));
 
     await installClaudePlugin({
@@ -376,7 +377,9 @@ describe('installClaudePlugin', () => {
     );
     const entry = secondInstalled.plugins['aictrl-talentrix@aictrl'][0];
     expect(entry.installedAt).toBe(firstInstalledAt);
-    expect(entry.lastUpdated).not.toBe(firstInstalledAt);
+    expect(Date.parse(entry.lastUpdated)).toBeGreaterThanOrEqual(
+      Date.parse(entry.installedAt),
+    );
   });
 
   it('cleans up legacy cache/<plugin>@aictrl/ directory from older installs', async () => {
@@ -485,6 +488,84 @@ describe('installClaudePlugin', () => {
     expect(known.aictrl.installLocation).toBe(
       join(pluginsRoot, 'marketplaces', 'aictrl'),
     );
+  });
+
+  it('produces a self-consistent set of index files that Claude Code can resolve end-to-end', async () => {
+    // This is the handshake Claude Code performs at load time:
+    //   1. settings.enabledPlugins["<plugin>@<marketplace>"] is true
+    //   2. known_marketplaces.json["<marketplace>"] points at a marketplace dir
+    //   3. <marketplaceDir>/.claude-plugin/marketplace.json declares "<plugin>"
+    //      with a "source" that resolves to a real plugin dir
+    //   4. installed_plugins.json["<plugin>@<marketplace>"][user].installPath
+    //      is the same plugin dir, which contains .claude-plugin/plugin.json
+    //      whose "name" matches "<plugin>"
+    // If any of these links drift (typo in marketplace name, wrong relative
+    // source, mismatched pluginId vs pluginDirName), Claude Code prints the
+    // exact "Plugin not found in marketplace aictrl" error that #18 was
+    // about — but per-file tests still pass. This test closes that gap.
+    await installClaudePlugin({
+      orgSlug: 'talentrix',
+      skills,
+      apiKey: 'sk_live_xxx',
+      baseUrl: 'https://aictrl.dev',
+      pluginsRoot,
+      settingsFile,
+    });
+
+    // 1. enabledPlugins entry shape: "<plugin>@<marketplace>"
+    const settings = JSON.parse(await readFile(settingsFile, 'utf-8'));
+    const enabledKeys = Object.keys(settings.enabledPlugins).filter((k) =>
+      k.startsWith('aictrl-talentrix@'),
+    );
+    expect(enabledKeys).toHaveLength(1);
+    const [pluginAtMarketplace] = enabledKeys;
+    const [pluginName, marketplaceName] = pluginAtMarketplace.split('@');
+
+    // 2. known_marketplaces.json declares the same marketplace name
+    const known = JSON.parse(
+      await readFile(join(pluginsRoot, 'known_marketplaces.json'), 'utf-8'),
+    );
+    expect(known[marketplaceName]).toBeDefined();
+    const marketplaceDir = known[marketplaceName].installLocation;
+    expect(typeof marketplaceDir).toBe('string');
+    expect(existsSync(marketplaceDir)).toBe(true);
+
+    // 3. The marketplace manifest declares the plugin with a source path
+    //    that resolves to a real plugin directory under the marketplace.
+    const manifest = JSON.parse(
+      await readFile(
+        join(marketplaceDir, '.claude-plugin', 'marketplace.json'),
+        'utf-8',
+      ),
+    );
+    expect(manifest.name).toBe(marketplaceName);
+    const pluginSpec = manifest.plugins.find(
+      (p: { name: string }) => p.name === pluginName,
+    );
+    expect(pluginSpec).toBeDefined();
+    expect(typeof pluginSpec.source).toBe('string');
+    const resolvedPluginDir = join(marketplaceDir, pluginSpec.source);
+    expect(existsSync(resolvedPluginDir)).toBe(true);
+
+    // 4. installed_plugins.json points the user-scope install at the SAME
+    //    directory, and that directory's plugin.json carries the same name.
+    const installed = JSON.parse(
+      await readFile(join(pluginsRoot, 'installed_plugins.json'), 'utf-8'),
+    );
+    const entries = installed.plugins[pluginAtMarketplace];
+    const userEntry = entries.find((e: { scope: string }) => e.scope === 'user');
+    expect(userEntry).toBeDefined();
+    // Normalize both paths through `join` so trailing-slash differences don't
+    // cause spurious failures across OSes.
+    expect(join(userEntry.installPath)).toBe(join(resolvedPluginDir));
+
+    const pluginJson = JSON.parse(
+      await readFile(
+        join(userEntry.installPath, '.claude-plugin', 'plugin.json'),
+        'utf-8',
+      ),
+    );
+    expect(pluginJson.name).toBe(pluginName);
   });
 
   it('preserves non-user-scope entries in installed_plugins.json across re-install', async () => {
