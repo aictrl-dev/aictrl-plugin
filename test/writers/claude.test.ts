@@ -10,7 +10,9 @@ describe('installClaudePlugin', () => {
   let tempHome: string;
   let pluginsRoot: string;
   let pluginsCache: string;
-  let settingsFile: string;
+  let projectDir: string;
+  let userSettingsFile: string;
+  let projectSettingsFile: string;
 
   const skills: WritableSkill[] = [
     {
@@ -29,7 +31,10 @@ describe('installClaudePlugin', () => {
     tempHome = await mkdtemp(join(tmpdir(), 'aictrl-test-'));
     pluginsRoot = join(tempHome, '.claude', 'plugins');
     pluginsCache = join(pluginsRoot, 'cache');
-    settingsFile = join(tempHome, '.claude', 'settings.json');
+    userSettingsFile = join(tempHome, '.claude', 'settings.json');
+    projectDir = join(tempHome, 'project');
+    projectSettingsFile = join(projectDir, '.claude', 'settings.local.json');
+    await mkdir(projectDir, { recursive: true });
   });
 
   afterEach(async () => {
@@ -49,7 +54,8 @@ describe('installClaudePlugin', () => {
       apiKey: 'sk_live_xxx',
       baseUrl: 'https://aictrl.dev',
       pluginsRoot,
-      settingsFile,
+      projectDir,
+      userSettingsFile,
     });
 
     const pluginDir = pluginPath(pluginsRoot);
@@ -67,7 +73,8 @@ describe('installClaudePlugin', () => {
       apiKey: 'sk_live_xxx',
       baseUrl: 'https://aictrl.dev',
       pluginsRoot,
-      settingsFile,
+      projectDir,
+      userSettingsFile,
     });
 
     const pluginJson = JSON.parse(
@@ -84,7 +91,8 @@ describe('installClaudePlugin', () => {
       apiKey: 'sk_live_xxx',
       baseUrl: 'https://aictrl.dev',
       pluginsRoot,
-      settingsFile,
+      projectDir,
+      userSettingsFile,
     });
 
     const mcpJson = JSON.parse(
@@ -94,24 +102,25 @@ describe('installClaudePlugin', () => {
     expect(mcpJson.mcpServers['aictrl-talentrix'].headers.Authorization).toBe('Bearer sk_live_xxx');
   });
 
-  it('registers plugin in settings.json', async () => {
+  it('enables plugin in project-scope settings.local.json', async () => {
     await installClaudePlugin({
       orgSlug: 'talentrix',
       skills,
       apiKey: 'sk_live_xxx',
       baseUrl: 'https://aictrl.dev',
       pluginsRoot,
-      settingsFile,
+      projectDir,
+      userSettingsFile,
     });
 
-    const settings = JSON.parse(await readFile(settingsFile, 'utf-8'));
-    expect(settings.enabledPlugins['aictrl-talentrix@aictrl']).toBe(true);
+    const projectSettings = JSON.parse(await readFile(projectSettingsFile, 'utf-8'));
+    expect(projectSettings.enabledPlugins['aictrl-talentrix@aictrl']).toBe(true);
   });
 
-  it('preserves existing settings when merging', async () => {
-    await mkdir(join(tempHome, '.claude'), { recursive: true });
+  it('preserves existing entries in project settings.local.json when merging', async () => {
+    await mkdir(join(projectDir, '.claude'), { recursive: true });
     await writeFile(
-      settingsFile,
+      projectSettingsFile,
       JSON.stringify({
         theme: 'dark',
         enabledPlugins: { 'other-plugin@market': true },
@@ -124,13 +133,14 @@ describe('installClaudePlugin', () => {
       apiKey: 'sk_live_xxx',
       baseUrl: 'https://aictrl.dev',
       pluginsRoot,
-      settingsFile,
+      projectDir,
+      userSettingsFile,
     });
 
-    const settings = JSON.parse(await readFile(settingsFile, 'utf-8'));
-    expect(settings.theme).toBe('dark');
-    expect(settings.enabledPlugins['other-plugin@market']).toBe(true);
-    expect(settings.enabledPlugins['aictrl-talentrix@aictrl']).toBe(true);
+    const projectSettings = JSON.parse(await readFile(projectSettingsFile, 'utf-8'));
+    expect(projectSettings.theme).toBe('dark');
+    expect(projectSettings.enabledPlugins['other-plugin@market']).toBe(true);
+    expect(projectSettings.enabledPlugins['aictrl-talentrix@aictrl']).toBe(true);
   });
 
   it('registers PostToolUse Read hook in hooks.json', async () => {
@@ -140,7 +150,8 @@ describe('installClaudePlugin', () => {
       apiKey: 'sk_live_xxx',
       baseUrl: 'https://aictrl.dev',
       pluginsRoot,
-      settingsFile,
+      projectDir,
+      userSettingsFile,
     });
 
     const pluginDir = pluginPath(pluginsRoot);
@@ -169,7 +180,8 @@ describe('installClaudePlugin', () => {
       apiKey: 'sk_live_xxx',
       baseUrl: 'https://aictrl.dev',
       pluginsRoot,
-      settingsFile,
+      projectDir,
+      userSettingsFile,
     });
 
     const pluginDir = pluginPath(pluginsRoot);
@@ -202,7 +214,8 @@ describe('installClaudePlugin', () => {
       apiKey: 'sk_live_xxx',
       baseUrl: 'https://aictrl.dev',
       pluginsRoot,
-      settingsFile,
+      projectDir,
+      userSettingsFile,
     });
 
     const newSkills: WritableSkill[] = [
@@ -215,7 +228,8 @@ describe('installClaudePlugin', () => {
       apiKey: 'sk_live_xxx',
       baseUrl: 'https://aictrl.dev',
       pluginsRoot,
-      settingsFile,
+      projectDir,
+      userSettingsFile,
     });
 
     const pluginDir = pluginPath(pluginsRoot);
@@ -240,7 +254,8 @@ describe('installClaudePlugin', () => {
       apiKey: 'sk_live_xxx',
       baseUrl: 'https://aictrl.dev',
       pluginsRoot,
-      settingsFile,
+      projectDir,
+      userSettingsFile,
     });
 
     const manifestPath = join(
@@ -272,7 +287,8 @@ describe('installClaudePlugin', () => {
       apiKey: 'sk_live_xxx',
       baseUrl: 'https://aictrl.dev',
       pluginsRoot,
-      settingsFile,
+      projectDir,
+      userSettingsFile,
     });
 
     const knownPath = join(pluginsRoot, 'known_marketplaces.json');
@@ -309,7 +325,8 @@ describe('installClaudePlugin', () => {
       apiKey: 'sk_live_xxx',
       baseUrl: 'https://aictrl.dev',
       pluginsRoot,
-      settingsFile,
+      projectDir,
+      userSettingsFile,
     });
 
     const known = JSON.parse(
@@ -326,7 +343,8 @@ describe('installClaudePlugin', () => {
       apiKey: 'sk_live_xxx',
       baseUrl: 'https://aictrl.dev',
       pluginsRoot,
-      settingsFile,
+      projectDir,
+      userSettingsFile,
     });
 
     const installedPath = join(pluginsRoot, 'installed_plugins.json');
@@ -351,7 +369,8 @@ describe('installClaudePlugin', () => {
       apiKey: 'sk_live_xxx',
       baseUrl: 'https://aictrl.dev',
       pluginsRoot,
-      settingsFile,
+      projectDir,
+      userSettingsFile,
     });
 
     const firstInstalled = JSON.parse(
@@ -369,7 +388,8 @@ describe('installClaudePlugin', () => {
       apiKey: 'sk_live_xxx',
       baseUrl: 'https://aictrl.dev',
       pluginsRoot,
-      settingsFile,
+      projectDir,
+      userSettingsFile,
     });
 
     const secondInstalled = JSON.parse(
@@ -394,7 +414,8 @@ describe('installClaudePlugin', () => {
       apiKey: 'sk_live_xxx',
       baseUrl: 'https://aictrl.dev',
       pluginsRoot,
-      settingsFile,
+      projectDir,
+      userSettingsFile,
     });
 
     expect(existsSync(legacyDir)).toBe(false);
@@ -415,7 +436,8 @@ describe('installClaudePlugin', () => {
           apiKey: 'sk_live_xxx',
           baseUrl: 'https://aictrl.dev',
           pluginsRoot,
-          settingsFile,
+          projectDir,
+          userSettingsFile,
         }),
       ).rejects.toThrow(/Invalid orgSlug/);
     }
@@ -431,7 +453,8 @@ describe('installClaudePlugin', () => {
         apiKey: 'sk_live_xxx',
         baseUrl: 'https://aictrl.dev',
         pluginsRoot,
-        settingsFile,
+        projectDir,
+        userSettingsFile,
       }),
     ).resolves.toBeUndefined();
   });
@@ -454,7 +477,8 @@ describe('installClaudePlugin', () => {
       apiKey: 'sk_live_xxx',
       baseUrl: 'https://aictrl.dev',
       pluginsRoot,
-      settingsFile,
+      projectDir,
+      userSettingsFile,
     });
 
     const manifest = JSON.parse(await readFile(manifestPath, 'utf-8'));
@@ -479,7 +503,8 @@ describe('installClaudePlugin', () => {
       apiKey: 'sk_live_xxx',
       baseUrl: 'https://aictrl.dev',
       pluginsRoot,
-      settingsFile,
+      projectDir,
+      userSettingsFile,
     });
 
     const known = JSON.parse(await readFile(knownPath, 'utf-8'));
@@ -509,11 +534,13 @@ describe('installClaudePlugin', () => {
       apiKey: 'sk_live_xxx',
       baseUrl: 'https://aictrl.dev',
       pluginsRoot,
-      settingsFile,
+      projectDir,
+      userSettingsFile,
     });
 
-    // 1. enabledPlugins entry shape: "<plugin>@<marketplace>"
-    const settings = JSON.parse(await readFile(settingsFile, 'utf-8'));
+    // 1. enabledPlugins entry shape: "<plugin>@<marketplace>" — lives in
+    // PROJECT-scope settings.local.json (one of the things #20 enforces).
+    const settings = JSON.parse(await readFile(projectSettingsFile, 'utf-8'));
     const enabledKeys = Object.keys(settings.enabledPlugins).filter((k) =>
       k.startsWith('aictrl-talentrix@'),
     );
@@ -595,7 +622,8 @@ describe('installClaudePlugin', () => {
       apiKey: 'sk_live_xxx',
       baseUrl: 'https://aictrl.dev',
       pluginsRoot,
-      settingsFile,
+      projectDir,
+      userSettingsFile,
     });
 
     const installed = JSON.parse(await readFile(installedPath, 'utf-8'));
@@ -611,5 +639,173 @@ describe('installClaudePlugin', () => {
     expect(user).toBeDefined();
     expect(user.installPath).toBe(pluginPath(pluginsRoot));
     expect(user.version).toBe('1.0.0');
+  });
+
+  // ---------------------------------------------------------------------------
+  // Regression tests for #20 — multi-org per-repo enablement
+  // ---------------------------------------------------------------------------
+  // The installer used to write enablement to user-scope ~/.claude/settings.json,
+  // which meant every Claude Code session in every repo loaded *every* org's
+  // MCP + skills. After #20 the enablement lives in project-scope
+  // <projectDir>/.claude/settings.local.json so a developer with two orgs gets
+  // only their current repo's plugin active.
+
+  it('does not write any enablement entry to user-scope settings.json', async () => {
+    await installClaudePlugin({
+      orgSlug: 'talentrix',
+      skills,
+      apiKey: 'sk_live_xxx',
+      baseUrl: 'https://aictrl.dev',
+      pluginsRoot,
+      projectDir,
+      userSettingsFile,
+    });
+
+    // Either the file was never created, or — if it existed already — it has
+    // no aictrl-* entries flipped on by this install.
+    if (existsSync(userSettingsFile)) {
+      const user = JSON.parse(await readFile(userSettingsFile, 'utf-8'));
+      const aictrlKeys = Object.keys(user.enabledPlugins ?? {}).filter((k) =>
+        k.startsWith('aictrl-'),
+      );
+      expect(aictrlKeys).toEqual([]);
+    } else {
+      expect(existsSync(userSettingsFile)).toBe(false);
+    }
+  });
+
+  it('removes legacy user-scope enablement on upgrade and preserves unrelated entries', async () => {
+    // Simulate a pre-#20 install: enablement landed in user-scope settings.json.
+    await mkdir(join(tempHome, '.claude'), { recursive: true });
+    await writeFile(
+      userSettingsFile,
+      JSON.stringify({
+        enabledPlugins: {
+          'aictrl-talentrix@aictrl': true,
+          'feature-dev@claude-code-plugins': true, // unrelated, must stay
+        },
+        theme: 'dark',
+      }),
+    );
+
+    await installClaudePlugin({
+      orgSlug: 'talentrix',
+      skills,
+      apiKey: 'sk_live_xxx',
+      baseUrl: 'https://aictrl.dev',
+      pluginsRoot,
+      projectDir,
+      userSettingsFile,
+    });
+
+    const user = JSON.parse(await readFile(userSettingsFile, 'utf-8'));
+    expect(user.enabledPlugins['aictrl-talentrix@aictrl']).toBeUndefined();
+    expect(user.enabledPlugins['feature-dev@claude-code-plugins']).toBe(true);
+    expect(user.theme).toBe('dark');
+
+    // And the new project-scope location has it instead.
+    const project = JSON.parse(await readFile(projectSettingsFile, 'utf-8'));
+    expect(project.enabledPlugins['aictrl-talentrix@aictrl']).toBe(true);
+  });
+
+  it('does not touch unrelated aictrl-<other-org>@aictrl entries in user settings', async () => {
+    // A developer who has talentrix installed at user scope (old installer)
+    // and is now installing celliq in a different repo: the celliq install
+    // should ONLY clean up celliq's own user-scope entry, not nuke talentrix's.
+    await mkdir(join(tempHome, '.claude'), { recursive: true });
+    await writeFile(
+      userSettingsFile,
+      JSON.stringify({
+        enabledPlugins: {
+          'aictrl-talentrix@aictrl': true,
+        },
+      }),
+    );
+
+    await installClaudePlugin({
+      orgSlug: 'celliq',
+      skills,
+      apiKey: 'sk_live_xxx',
+      baseUrl: 'https://aictrl.dev',
+      pluginsRoot,
+      projectDir,
+      userSettingsFile,
+    });
+
+    const user = JSON.parse(await readFile(userSettingsFile, 'utf-8'));
+    // talentrix entry survives — it'll get migrated when the user re-runs
+    // the installer inside the talentrix repo.
+    expect(user.enabledPlugins['aictrl-talentrix@aictrl']).toBe(true);
+    expect(user.enabledPlugins['aictrl-celliq@aictrl']).toBeUndefined();
+  });
+
+  it('adds .claude/settings.local.json to project .gitignore', async () => {
+    await installClaudePlugin({
+      orgSlug: 'talentrix',
+      skills,
+      apiKey: 'sk_live_xxx',
+      baseUrl: 'https://aictrl.dev',
+      pluginsRoot,
+      projectDir,
+      userSettingsFile,
+    });
+
+    const gitignorePath = join(projectDir, '.gitignore');
+    expect(existsSync(gitignorePath)).toBe(true);
+    const gitignore = await readFile(gitignorePath, 'utf-8');
+    expect(gitignore.split('\n').map((l) => l.trim())).toContain(
+      '.claude/settings.local.json',
+    );
+  });
+
+  it('multi-org: two project dirs each get only their own org enabled', async () => {
+    const projectA = join(tempHome, 'celliq-repo');
+    const projectB = join(tempHome, 'talentrix-repo');
+    await mkdir(projectA, { recursive: true });
+    await mkdir(projectB, { recursive: true });
+
+    await installClaudePlugin({
+      orgSlug: 'celliq',
+      skills,
+      apiKey: 'sk_celliq',
+      baseUrl: 'https://aictrl.dev',
+      pluginsRoot,
+      projectDir: projectA,
+      userSettingsFile,
+    });
+
+    await installClaudePlugin({
+      orgSlug: 'talentrix',
+      skills,
+      apiKey: 'sk_talentrix',
+      baseUrl: 'https://aictrl.dev',
+      pluginsRoot,
+      projectDir: projectB,
+      userSettingsFile,
+    });
+
+    const settingsA = JSON.parse(
+      await readFile(join(projectA, '.claude', 'settings.local.json'), 'utf-8'),
+    );
+    const settingsB = JSON.parse(
+      await readFile(join(projectB, '.claude', 'settings.local.json'), 'utf-8'),
+    );
+
+    expect(settingsA.enabledPlugins['aictrl-celliq@aictrl']).toBe(true);
+    expect(settingsA.enabledPlugins['aictrl-talentrix@aictrl']).toBeUndefined();
+
+    expect(settingsB.enabledPlugins['aictrl-talentrix@aictrl']).toBe(true);
+    expect(settingsB.enabledPlugins['aictrl-celliq@aictrl']).toBeUndefined();
+
+    // Both plugins still coexist at the global install layer (so users can
+    // switch repos without re-installing) — they're just not both enabled.
+    const manifest = JSON.parse(
+      await readFile(
+        join(pluginsRoot, 'marketplaces', 'aictrl', '.claude-plugin', 'marketplace.json'),
+        'utf-8',
+      ),
+    );
+    const pluginNames = manifest.plugins.map((p: { name: string }) => p.name).sort();
+    expect(pluginNames).toEqual(['aictrl-celliq', 'aictrl-talentrix']);
   });
 });

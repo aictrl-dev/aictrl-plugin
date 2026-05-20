@@ -184,7 +184,8 @@ async function main(): Promise<void> {
       apiKey,
       baseUrl: options.baseUrl,
       pluginsRoot: CLAUDE_PLUGINS_ROOT,
-      settingsFile: CLAUDE_SETTINGS_FILE,
+      projectDir,
+      userSettingsFile: CLAUDE_SETTINGS_FILE,
     });
     console.log(`    ✓ Installed plugin aictrl-${orgSlug} (${skills.length} skills)`);
     console.log(`    ✓ Configured MCP server aictrl-${orgSlug}`);
