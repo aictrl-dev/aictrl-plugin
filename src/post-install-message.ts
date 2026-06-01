@@ -1,4 +1,6 @@
-export type Editor = 'claude' | 'opencode' | 'cursor';
+import type { Editor } from './editors.js';
+
+export type { Editor };
 
 export function printPostInstallMessage(orgSlug: string, editors: Editor[]): void {
   console.log('  Done! Skills are ready to use.');
@@ -9,6 +11,14 @@ export function printPostInstallMessage(orgSlug: string, editors: Editor[]): voi
     console.log('  run this in Claude Code to clean up the legacy plugin:');
     console.log('');
     console.log(`    /plugin uninstall aictrl-${orgSlug}@aictrl-skills`);
+    console.log('');
+  }
+
+  if (editors.includes('codex')) {
+    console.log('');
+    console.log('  Codex MCP auth uses AICTRL_API_KEY from your environment.');
+    console.log('  Codex skill telemetry is not installed yet because Codex does not');
+    console.log('  expose a stable skill-invocation hook surface.');
     console.log('');
   }
 

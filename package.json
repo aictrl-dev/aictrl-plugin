@@ -1,7 +1,7 @@
 {
   "name": "@aictrl/plugin",
   "version": "2.2.0",
-  "description": "Set up aictrl skills, telemetry, and MCP for Claude Code, OpenCode, and Cursor",
+  "description": "Set up aictrl skills, telemetry, and MCP for Claude Code, OpenCode, Cursor, and Codex",
   "type": "module",
   "bin": {
     "aictrl-plugin": "bin/setup.js"
@@ -21,6 +21,7 @@
     "claude-code",
     "opencode",
     "cursor",
+    "codex",
     "skills",
     "mcp",
     "setup"

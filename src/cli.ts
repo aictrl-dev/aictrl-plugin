@@ -7,6 +7,8 @@ import {
   PROJECT_CONFIG_FILE,
   CLAUDE_PLUGINS_ROOT,
   CLAUDE_SETTINGS_FILE,
+  CODEX_CONFIG_FILE,
+  CODEX_MARKETPLACE_FILE,
   FETCH_BATCH_SIZE,
 } from './config.js';
 import { readCredentials, writeOrgCredential, readProjectConfig, writeProjectConfig } from './credentials.js';
@@ -15,8 +17,10 @@ import { fetchMarketplace, fetchSkillContent, type MarketplaceSkill } from './fe
 import { installClaudePlugin } from './writers/claude.js';
 import { installOpenCode } from './writers/opencode.js';
 import { installCursor } from './writers/cursor.js';
+import { installCodex } from './writers/codex.js';
 import { ensureGitignore } from './gitignore.js';
-import { printPostInstallMessage, type Editor } from './post-install-message.js';
+import { printPostInstallMessage } from './post-install-message.js';
+import { EDITOR_CHOICES, parseEditors, type Editor } from './editors.js';
 import type { WritableSkill } from './writers/shared.js';
 
 interface CliOptions {
@@ -46,17 +50,6 @@ function parseCliArgs(): CliOptions {
     nonInteractive: (values['non-interactive'] as boolean) ?? false,
     baseUrl: (values['base-url'] as string) ?? DEFAULT_BASE_URL,
   };
-}
-
-const VALID_EDITORS = new Set<string>(['claude', 'opencode', 'cursor']);
-
-function parseEditors(editorsStr: string): Editor[] {
-  const editors = editorsStr.split(',').map(e => e.trim());
-  const invalid = editors.filter(e => !VALID_EDITORS.has(e));
-  if (invalid.length > 0) {
-    throw new Error(`Unknown editor(s): ${invalid.join(', ')}. Valid options: claude, opencode, cursor`);
-  }
-  return editors as Editor[];
 }
 
 async function resolveOrg(options: CliOptions): Promise<string> {
@@ -92,11 +85,7 @@ async function resolveEditors(options: CliOptions): Promise<Editor[]> {
 
   const selected = await checkbox({
     message: 'Select editors to configure:',
-    choices: [
-      { name: 'Claude Code', value: 'claude' as const },
-      { name: 'OpenCode', value: 'opencode' as const },
-      { name: 'Cursor', value: 'cursor' as const },
-    ],
+    choices: EDITOR_CHOICES,
   });
 
   if (selected.length === 0) {
@@ -218,6 +207,21 @@ async function main(): Promise<void> {
     console.log(`    ✓ Configured MCP server in .cursor/mcp.json`);
     console.log('    ✓ Installed telemetry hook\n');
     gitignoreEntries.push('.cursor/mcp.json');
+  }
+
+  if (editors.includes('codex')) {
+    console.log('  Codex:');
+    await installCodex({
+      orgSlug,
+      skills,
+      baseUrl: options.baseUrl,
+      codexConfigFile: CODEX_CONFIG_FILE,
+      codexMarketplaceFile: CODEX_MARKETPLACE_FILE,
+    });
+    console.log(`    ✓ Wrote ${skills.length} skills to Codex plugin aictrl-${orgSlug}`);
+    console.log(`    ✓ Registered Codex personal marketplace entry`);
+    console.log(`    ✓ Configured MCP server in ${CODEX_CONFIG_FILE}`);
+    console.log('    ℹ Codex skill telemetry not installed: no stable skill-invocation hook\n');
   }
 
   // 7. Update .gitignore
