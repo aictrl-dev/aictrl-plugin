@@ -35,7 +35,9 @@ describe('installCodex', () => {
   });
 
   const pluginPath = (plugin = 'aictrl-talentrix') =>
-    join(tempHome, '.agents', 'plugins', 'plugins', plugin);
+    join(tempHome, 'plugins', plugin);
+  const pluginCachePath = (plugin = 'aictrl-talentrix') =>
+    join(tempHome, '.codex', 'plugins', 'cache', 'personal', plugin, '1.0.0');
 
   it('writes a Codex plugin with fetched skills', async () => {
     await installCodex({
@@ -49,6 +51,11 @@ describe('installCodex', () => {
     expect(existsSync(join(pluginPath(), '.codex-plugin', 'plugin.json'))).toBe(true);
     expect(existsSync(join(pluginPath(), 'skills', 'code-review', 'SKILL.md'))).toBe(true);
     expect(existsSync(join(pluginPath(), 'skills', 'tdd', 'references', 'checklist.md'))).toBe(true);
+    expect(existsSync(join(pluginCachePath(), '.codex-plugin', 'plugin.json'))).toBe(true);
+    expect(existsSync(join(pluginCachePath(), 'skills', 'code-review', 'SKILL.md'))).toBe(true);
+    expect(existsSync(join(tempHome, '.agents', 'plugins', 'plugins', 'aictrl-talentrix'))).toBe(
+      false,
+    );
 
     const pluginJson = JSON.parse(
       await readFile(join(pluginPath(), '.codex-plugin', 'plugin.json'), 'utf-8'),
@@ -130,6 +137,8 @@ describe('installCodex', () => {
     expect(config).toContain('[mcp_servers.aictrl-talentrix]');
     expect(config).toContain('url = "https://aictrl.dev/talentrix/mcp"');
     expect(config).toContain('bearer_token_env_var = "AICTRL_API_KEY"');
+    expect(config).toContain('[plugins."aictrl-talentrix@personal"]');
+    expect(config).toContain('enabled = true');
     expect(config).not.toContain('sk_live');
 
     const mode = (await stat(codexConfigFile)).mode & 0o777;
@@ -168,6 +177,7 @@ describe('installCodex', () => {
 
     const config = await readFile(codexConfigFile, 'utf-8');
     expect((config.match(/\[mcp_servers\.aictrl-talentrix\]/g) ?? [])).toHaveLength(1);
+    expect((config.match(/\[plugins\."aictrl-talentrix@personal"\]/g) ?? [])).toHaveLength(1);
     expect(config).toContain('[mcp_servers.other]\nurl = "https://example.com/mcp"');
     expect(config).not.toContain('OLD_KEY');
   });
@@ -183,8 +193,6 @@ describe('installCodex', () => {
 
     const unrelatedPluginSkill = join(
       tempHome,
-      '.agents',
-      'plugins',
       'plugins',
       'other',
       'skills',

@@ -1,4 +1,4 @@
-import { chmod, mkdir, readFile, rename, rm, writeFile } from 'fs/promises';
+import { chmod, cp, mkdir, readFile, rename, rm, writeFile } from 'fs/promises';
 import { dirname, join } from 'path';
 import { clearSkillsDir, writeSkill, type WritableSkill } from './shared.js';
 
@@ -36,8 +36,18 @@ export async function installCodex(options: CodexOptions): Promise<void> {
 
   const pluginId = `aictrl-${orgSlug}`;
   const marketplaceRoot = dirname(codexMarketplaceFile);
-  const pluginDir = join(marketplaceRoot, 'plugins', pluginId);
+  const personalMarketplaceRoot = dirname(dirname(marketplaceRoot));
+  const pluginDir = join(personalMarketplaceRoot, 'plugins', pluginId);
+  const legacyPluginDir = join(marketplaceRoot, 'plugins', pluginId);
   const skillsDir = join(pluginDir, 'skills');
+  const pluginCacheDir = join(
+    dirname(codexConfigFile),
+    'plugins',
+    'cache',
+    MARKETPLACE_NAME,
+    pluginId,
+    PLUGIN_VERSION,
+  );
 
   await clearSkillsDir(skillsDir);
   for (const skill of skills) {
@@ -45,8 +55,11 @@ export async function installCodex(options: CodexOptions): Promise<void> {
   }
 
   await writePluginManifest(pluginDir, pluginId, orgSlug);
+  await rm(legacyPluginDir, { recursive: true, force: true });
   await mergeMarketplace(codexMarketplaceFile, pluginId);
+  await installPluginCache(pluginDir, pluginCacheDir);
   await mergeCodexMcpConfig(codexConfigFile, orgSlug, baseUrl);
+  await mergeCodexPluginConfig(codexConfigFile, pluginId);
 }
 
 async function writePluginManifest(
@@ -152,6 +165,12 @@ async function mergeMarketplace(marketplaceFile: string, pluginId: string): Prom
   await writeJsonAtomic(marketplaceFile, marketplace);
 }
 
+async function installPluginCache(pluginDir: string, pluginCacheDir: string): Promise<void> {
+  await rm(pluginCacheDir, { recursive: true, force: true });
+  await mkdir(dirname(pluginCacheDir), { recursive: true });
+  await cp(pluginDir, pluginCacheDir, { recursive: true });
+}
+
 async function mergeCodexMcpConfig(
   codexConfigFile: string,
   orgSlug: string,
@@ -172,6 +191,24 @@ async function mergeCodexMcpConfig(
   }
 
   const next = replaceTomlTable(content, `mcp_servers.${serverName}`, block);
+  await mkdir(dirname(codexConfigFile), { recursive: true });
+  await writeFileAtomic(codexConfigFile, next);
+  await chmod(codexConfigFile, 0o600);
+}
+
+async function mergeCodexPluginConfig(codexConfigFile: string, pluginId: string): Promise<void> {
+  const pluginKey = `${pluginId}@${MARKETPLACE_NAME}`;
+  const tableName = `plugins.${tomlString(pluginKey)}`;
+  const block = [`[${tableName}]`, 'enabled = true'].join('\n');
+
+  let content = '';
+  try {
+    content = await readFile(codexConfigFile, 'utf-8');
+  } catch {
+    // No existing config: create it below.
+  }
+
+  const next = replaceTomlTable(content, tableName, block);
   await mkdir(dirname(codexConfigFile), { recursive: true });
   await writeFileAtomic(codexConfigFile, next);
   await chmod(codexConfigFile, 0o600);
