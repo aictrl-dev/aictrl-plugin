@@ -10,6 +10,10 @@ export const PROJECT_CONFIG_FILE = '.aictrl.json';
 export const CLAUDE_PLUGINS_ROOT = join(homedir(), '.claude', 'plugins');
 export const CLAUDE_SETTINGS_FILE = join(homedir(), '.claude', 'settings.json');
 
+export const CODEX_HOME = process.env.CODEX_HOME ?? join(homedir(), '.codex');
+export const CODEX_CONFIG_FILE = join(CODEX_HOME, 'config.toml');
+export const CODEX_MARKETPLACE_FILE = join(homedir(), '.agents', 'plugins', 'marketplace.json');
+
 export const OPENCODE_SKILLS_DIR = '.opencode/skills';
 export const OPENCODE_HOOKS_DIR = '.opencode/hooks';
 

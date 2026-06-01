@@ -36,6 +36,14 @@ describe('printPostInstallMessage', () => {
     expect(output).toContain('Done! Skills are ready to use');
   });
 
+  it('prints the Codex telemetry limitation when codex is installed', () => {
+    printPostInstallMessage('test-org', ['codex']);
+    const output = consoleSpy.mock.calls.map(c => c.join(' ')).join('\n');
+    expect(output).toContain('Codex MCP auth uses AICTRL_API_KEY');
+    expect(output).toContain('Codex skill telemetry is not installed yet');
+    expect(output).not.toContain('/plugin uninstall');
+  });
+
   it('prints the cleanup reminder when claude and cursor are both installed', () => {
     printPostInstallMessage('multi-org', ['claude', 'cursor']);
     const output = consoleSpy.mock.calls.map(c => c.join(' ')).join('\n');
