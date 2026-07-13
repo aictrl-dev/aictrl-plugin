@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "repository": "https://github.com/aictrl-dev/skills.git",
+  "commit": "99b618002daed84245cdc86f92abef811d803c8a",
+  "checksumsFile": "CHECKSUMS.sha256",
+  "checksumsSha256": "f7ee4bd53e6ed2bacd68803dfb230b79a47649124fc5d1ecb0c1958be1a35a45",
+  "sourceDirectory": "aictrl-skills/skills",
+  "skills": [
+    "create-issue",
+    "create-bug",
+    "spec-review",
+    "implement-code-change",
+    "code-review",
+    "judge-review-findings",
+    "reply-to-code-review",
+    "create-workflow"
+  ],
+  "targets": [
+    "claude/aictrl/skills",
+    "plugins/aictrl/skills",
+    "opencode/skills"
+  ]
+}
