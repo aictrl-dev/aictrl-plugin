@@ -1,0 +1,14 @@
+{
+  "name": "aictrl",
+  "version": "0.1.0-beta.1",
+  "description": "Eight portable engineering skills with optional controlled AICtrl workflow execution",
+  "author": {
+    "name": "aictrl.dev",
+    "email": "support@aictrl.dev",
+    "url": "https://aictrl.dev"
+  },
+  "homepage": "https://aictrl.dev",
+  "repository": "https://github.com/aictrl-dev/aictrl-plugin",
+  "license": "MIT",
+  "mcpServers": "./.mcp.json"
+}
