@@ -14,3 +14,6 @@ you use the connected `implement-code-change` workflow.
 Use `npx @aictrl/opencode --project .` for project-local installation or
 `npx @aictrl/opencode --uninstall` to remove only AICtrl-managed skills and MCP
 configuration.
+
+Support: https://aictrl.dev/support · Privacy: https://aictrl.dev/privacy ·
+Terms: https://aictrl.dev/terms

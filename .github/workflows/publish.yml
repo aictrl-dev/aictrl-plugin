@@ -18,8 +18,17 @@ jobs:
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
-          cache: npm
       - run: npm ci
       - run: npm run build
       - run: npm test
-      - run: npm publish --access public
+      - run: npm run validate:public
+      - name: Resolve release target
+        id: release
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: node scripts/resolve-release-target.mjs "$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+      - name: Publish release target
+        run: >-
+          npm publish "${{ steps.release.outputs.package_spec }}"
+          --access public
+          --tag "${{ steps.release.outputs.dist_tag }}"
