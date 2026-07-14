@@ -16,7 +16,8 @@
 - [x] Starter prompts are limited to three.
 - [x] Reviewer pack contains exactly five positive and three negative cases.
 - [ ] Every positive reviewer case names reproducible fixture/account data; the
-      dedicated public repository, issue, and demo-account access are ready.
+      dedicated public repository, issue, and demo-account access described in
+      `reviewer-fixture.md` are ready.
 - [ ] Final production logo is approved for the public listing. Screenshots are
       optional in the current submission guidance and are not a release gate.
 

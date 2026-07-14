@@ -91,11 +91,15 @@ if (
 }
 
 const testCases = readFileSync(join(root, 'submission/codex/test-cases.md'), 'utf8');
+if (!existsSync(join(root, 'submission/codex/reviewer-fixture.md'))) {
+  errors.push('Codex reviewer fixture specification is required');
+}
 if ((testCases.match(/^### P\d+ /gm) || []).length !== 5) errors.push('Codex reviewer pack must contain exactly five positive cases');
 if ((testCases.match(/^### N\d+ /gm) || []).length !== 3) errors.push('Codex reviewer pack must contain exactly three negative cases');
 if ((testCases.match(/^- Fixture\/account:/gm) || []).length !== 5) {
   errors.push('Every positive Codex reviewer case must declare fixture/account requirements');
 }
+if (!testCases.includes('reviewer-fixture.md')) errors.push('Codex reviewer cases must reference the fixture specification');
 if (/\bissue_id\b/.test(testCases)) errors.push('Codex reviewer pack must use the canonical issue-id workflow input');
 if (!/\bissue-id\b/.test(testCases)) errors.push('Codex reviewer pack must exercise the canonical issue-id workflow input');
 

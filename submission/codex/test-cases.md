@@ -2,6 +2,8 @@
 
 Run these cases from the final `plugins/aictrl` file tree. The submission must
 contain exactly these five positive and three negative cases.
+Provision and rehearse the connected resources in `reviewer-fixture.md` before
+replacing any placeholder or submitting this pack.
 
 ## Positive cases
 

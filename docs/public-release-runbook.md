@@ -166,7 +166,8 @@ test in the release evidence.
 
 The launch proof must use a dedicated, authorized public fixture repository, a
 disposable fixture issue, and the no-MFA reviewer demo account. Do not run the
-submission cases against a production backlog issue. Record:
+submission cases against a production backlog issue. Provision and rehearse the
+resources using `submission/codex/reviewer-fixture.md`. Record:
 
 - referral source, agent platform, skill and plugin versions, without source or
   prompt content;
