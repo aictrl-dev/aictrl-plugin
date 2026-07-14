@@ -59,6 +59,10 @@ the production `https://aictrl.dev/mcp/workflows` endpoint, OAuth hardening,
 clean-client lifecycle evidence, publisher verification, and vendor publication
 checks. Local skills do not require an AICtrl account or API key.
 
+Release owners must follow the [public release runbook](docs/public-release-runbook.md),
+including the skills re-pin, first npm publication, vendor smoke tests, evidence,
+and rollback gates.
+
 The existing `npx @aictrl/plugin` tenant installer remains supported and is not
 silently replaced by this public OAuth path.
 
