@@ -35,9 +35,10 @@ Use `npx @aictrl/opencode --project .` for a project-local install or
 
 ## Reproducible skill source
 
-`public-skills.lock.json` pins an immutable `aictrl-dev/skills` commit and the
-digest of its checksum manifest. All three vendor packages contain byte-identical
-copies of the eight launch skills.
+`public-skills.lock.json` pins an immutable
+[`aictrl-dev/skills`](https://github.com/aictrl-dev/skills) commit and the digest
+of its checksum manifest. All three vendor packages contain byte-identical copies
+of the eight launch skills.
 
 ```bash
 npm run assemble:public
