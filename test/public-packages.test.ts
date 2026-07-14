@@ -92,6 +92,59 @@ describe('public vendor packages', () => {
     });
   });
 
+  it('upgrades AICtrl-managed OpenCode state without removing unrelated skills', () => {
+    const root = mkdtempSync(join(tmpdir(), 'aictrl-opencode-upgrade-'));
+    const configRoot = join(root, 'opencode');
+    const configFile = join(configRoot, 'opencode.json');
+    const skillsRoot = join(configRoot, 'skills');
+    const managedSkill = join(skillsRoot, 'implement-code-change');
+    const unrelatedSkill = join(skillsRoot, 'team-custom');
+    mkdirSync(managedSkill, { recursive: true });
+    mkdirSync(unrelatedSkill, { recursive: true });
+    writeFileSync(join(managedSkill, 'SKILL.md'), 'stale managed skill\n');
+    writeFileSync(join(unrelatedSkill, 'SKILL.md'), 'unrelated team skill\n');
+    writeFileSync(
+      configFile,
+      JSON.stringify({
+        theme: 'system',
+        mcp: {
+          existing: { type: 'remote', url: 'https://example.com/mcp' },
+          aictrl: {
+            type: 'remote',
+            url: 'https://aictrl.dev/mcp/workflows/opencode-ecosystem/0.1.0-beta.1/implement-code-change/1.0.0',
+            enabled: true,
+          },
+        },
+      }),
+    );
+
+    execFileSync(process.execPath, [join(repoRoot, 'opencode/bin/install.js')], {
+      env: { ...process.env, XDG_CONFIG_HOME: root },
+    });
+
+    const packageMetadata = json('opencode/package.json');
+    const skillsManifest = json('opencode/skills-manifest.json');
+    expect(jsonAt(configFile)).toMatchObject({
+      theme: 'system',
+      mcp: {
+        existing: { type: 'remote', url: 'https://example.com/mcp' },
+        aictrl: {
+          type: 'remote',
+          url: publicMcpUrl(
+            'opencode-ecosystem',
+            packageMetadata.version,
+            skillsManifest.skillsVersion,
+          ),
+          enabled: true,
+        },
+      },
+    });
+    expect(readFileSync(join(managedSkill, 'SKILL.md'), 'utf8')).toBe(
+      readFileSync(join(repoRoot, 'opencode/skills/implement-code-change/SKILL.md'), 'utf8'),
+    );
+    expect(readFileSync(join(unrelatedSkill, 'SKILL.md'), 'utf8')).toBe('unrelated team skill\n');
+  });
+
   it('fails closed instead of overwriting malformed OpenCode config', () => {
     const root = mkdtempSync(join(tmpdir(), 'aictrl-opencode-invalid-'));
     const configRoot = join(root, 'opencode');
