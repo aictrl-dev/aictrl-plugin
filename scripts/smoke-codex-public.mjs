@@ -21,6 +21,7 @@ const marketplacePluginRoot = join(marketplaceRoot, 'plugins/aictrl');
 const codex = process.env.CODEX_BIN || 'codex';
 const env = { ...process.env, CODEX_HOME: codexHome };
 const pluginId = 'aictrl@aictrl-public';
+const publicSkillsLock = json(join(root, 'public-skills.lock.json'));
 const expectedSkills = [
   'code-review',
   'create-bug',
@@ -52,6 +53,12 @@ try {
   writeFileSync(
     join(marketplacePluginRoot, '.codex-plugin/plugin.json'),
     `${JSON.stringify({ ...sourceManifest, version: upgradeVersion }, null, 2)}\n`,
+  );
+  const upgradedMcp = json(join(marketplacePluginRoot, '.mcp.json'));
+  upgradedMcp.mcpServers.aictrl.url = publicMcpUrl(upgradeVersion);
+  writeFileSync(
+    join(marketplacePluginRoot, '.mcp.json'),
+    `${JSON.stringify(upgradedMcp, null, 2)}\n`,
   );
   run(['plugin', 'add', pluginId]);
   assertInstalled(upgradeVersion);
@@ -86,8 +93,8 @@ function assertInstalled(expectedVersion) {
   }
 
   const installedMcp = json(join(installedRoot, '.mcp.json'));
-  if (installedMcp.mcpServers?.aictrl?.url !== 'https://aictrl.dev/mcp/workflows') {
-    throw new Error('Installed Codex plugin does not target the production workflow MCP');
+  if (installedMcp.mcpServers?.aictrl?.url !== publicMcpUrl(expectedVersion)) {
+    throw new Error('Installed Codex plugin does not target its versioned workflow MCP resource');
   }
 
   const skillsRoot = join(installedRoot, 'skills');
@@ -127,4 +134,8 @@ function assertIncludes(value, expected, context) {
   if (!value.includes(expected)) {
     throw new Error(`${context} did not include ${JSON.stringify(expected)}`);
   }
+}
+
+function publicMcpUrl(pluginVersion) {
+  return `https://aictrl.dev/mcp/workflows/codex-plugin-directory/${pluginVersion}/implement-code-change/${publicSkillsLock.skillsVersion}`;
 }

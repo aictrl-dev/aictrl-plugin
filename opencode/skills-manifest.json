@@ -1,10 +1,13 @@
-[
-  "create-issue",
-  "create-bug",
-  "spec-review",
-  "implement-code-change",
-  "code-review",
-  "judge-review-findings",
-  "reply-to-code-review",
-  "create-workflow"
-]
+{
+  "skillsVersion": "1.0.0",
+  "skills": [
+    "create-issue",
+    "create-bug",
+    "spec-review",
+    "implement-code-change",
+    "code-review",
+    "judge-review-findings",
+    "reply-to-code-review",
+    "create-workflow"
+  ]
+}

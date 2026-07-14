@@ -9,6 +9,7 @@ import {
   readdirSync,
   rmSync,
   statSync,
+  writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, relative, resolve } from 'node:path';
@@ -23,8 +24,12 @@ const requestedSource = sourceFlag === -1 ? null : process.argv[sourceFlag + 1];
 if (sourceFlag !== -1 && !requestedSource) {
   throw new Error('--source requires a local checkout path');
 }
-if (lock.schemaVersion !== 1 || !/^[a-f0-9]{40}$/.test(lock.commit)) {
-  throw new Error('public-skills.lock.json has an unsupported schema or commit');
+if (
+  lock.schemaVersion !== 1
+  || !/^[a-f0-9]{40}$/.test(lock.commit)
+  || !/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(lock.skillsVersion)
+) {
+  throw new Error('public-skills.lock.json has an unsupported schema, commit, or skills version');
 }
 
 let cleanup = null;
@@ -54,10 +59,13 @@ try {
   verifySource(sourceRoot);
   if (checkOnly) {
     verifyTargets(sourceRoot);
+    verifyDistributionMetadata();
     console.log(`Verified ${lock.skills.length} pinned skills in ${lock.targets.length} package targets.`);
   } else {
     writeTargets(sourceRoot);
+    writeDistributionMetadata();
     verifyTargets(sourceRoot);
+    verifyDistributionMetadata();
     console.log(`Assembled ${lock.skills.length} pinned skills into ${lock.targets.length} package targets.`);
   }
 } finally {
@@ -65,6 +73,21 @@ try {
 }
 
 function verifySource(source) {
+  const releaseTag = `v${lock.skillsVersion}`;
+  let releaseCommit;
+  try {
+    releaseCommit = execFileSync('git', ['rev-list', '-n', '1', releaseTag], {
+      cwd: source,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    }).trim();
+  } catch {
+    throw new Error(`Pinned skills release tag is missing: ${releaseTag}`);
+  }
+  if (releaseCommit !== lock.commit) {
+    throw new Error(`${releaseTag} resolves to ${releaseCommit}; lock requires ${lock.commit}`);
+  }
+
   const checksumPath = join(source, lock.checksumsFile);
   const checksumBytes = readFileSync(checksumPath);
   if (sha256(checksumBytes) !== lock.checksumsSha256) {
@@ -99,6 +122,71 @@ function verifySource(source) {
       if (actual !== expected) throw new Error(`Checksum mismatch for ${checksumKey}`);
     }
   }
+}
+
+function writeDistributionMetadata() {
+  const codex = readJson('plugins/aictrl/.codex-plugin/plugin.json');
+  const claude = readJson('claude/aictrl/.claude-plugin/plugin.json');
+  const opencode = readJson('opencode/package.json');
+
+  writeJson('plugins/aictrl/.mcp.json', mcpConfig('codex-plugin-directory', codex.version));
+  writeJson('claude/aictrl/.mcp.json', mcpConfig('claude-marketplace', claude.version));
+  writeJson('opencode/skills-manifest.json', {
+    skillsVersion: lock.skillsVersion,
+    skills: lock.skills,
+  });
+
+  if (codex.version !== opencode.version || claude.version !== opencode.version) {
+    throw new Error('Claude, Codex, and OpenCode public package versions must match');
+  }
+}
+
+function verifyDistributionMetadata() {
+  const codex = readJson('plugins/aictrl/.codex-plugin/plugin.json');
+  const claude = readJson('claude/aictrl/.claude-plugin/plugin.json');
+  const opencode = readJson('opencode/package.json');
+  const codexMcp = readJson('plugins/aictrl/.mcp.json');
+  const claudeMcp = readJson('claude/aictrl/.mcp.json');
+  const skillsManifest = readJson('opencode/skills-manifest.json');
+
+  if (codex.version !== opencode.version || claude.version !== opencode.version) {
+    throw new Error('Claude, Codex, and OpenCode public package versions must match');
+  }
+  if (codexMcp.mcpServers?.aictrl?.url !== publicMcpUrl('codex-plugin-directory', codex.version)) {
+    throw new Error('Codex MCP resource URL does not match the pinned package and skill versions');
+  }
+  if (claudeMcp.mcpServers?.aictrl?.url !== publicMcpUrl('claude-marketplace', claude.version)) {
+    throw new Error('Claude MCP resource URL does not match the pinned package and skill versions');
+  }
+  if (
+    skillsManifest.skillsVersion !== lock.skillsVersion
+    || JSON.stringify(skillsManifest.skills) !== JSON.stringify(lock.skills)
+  ) {
+    throw new Error('OpenCode skills manifest does not match the pinned skills lock');
+  }
+}
+
+function mcpConfig(listing, pluginVersion) {
+  return {
+    mcpServers: {
+      aictrl: {
+        type: 'http',
+        url: publicMcpUrl(listing, pluginVersion),
+      },
+    },
+  };
+}
+
+function publicMcpUrl(listing, pluginVersion) {
+  return `https://aictrl.dev/mcp/workflows/${listing}/${pluginVersion}/implement-code-change/${lock.skillsVersion}`;
+}
+
+function readJson(path) {
+  return JSON.parse(readFileSync(join(root, path), 'utf8'));
+}
+
+function writeJson(path, value) {
+  writeFileSync(join(root, path), `${JSON.stringify(value, null, 2)}\n`);
 }
 
 function writeTargets(source) {

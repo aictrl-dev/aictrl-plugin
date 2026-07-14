@@ -2,6 +2,7 @@
   "schemaVersion": 1,
   "repository": "https://github.com/aictrl-dev/skills.git",
   "commit": "99b618002daed84245cdc86f92abef811d803c8a",
+  "skillsVersion": "1.0.0",
   "checksumsFile": "CHECKSUMS.sha256",
   "checksumsSha256": "f7ee4bd53e6ed2bacd68803dfb230b79a47649124fc5d1ecb0c1958be1a35a45",
   "sourceDirectory": "aictrl-skills/skills",

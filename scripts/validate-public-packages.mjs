@@ -9,9 +9,12 @@ const errors = [];
 const plugin = json('plugins/aictrl/.codex-plugin/plugin.json');
 const marketplace = json('.agents/plugins/marketplace.json');
 const mcp = json('plugins/aictrl/.mcp.json');
+const claudeMcp = json('claude/aictrl/.mcp.json');
 const opencode = json('opencode/package.json');
+const opencodeSkills = json('opencode/skills-manifest.json');
 const claudePlugin = json('claude/aictrl/.claude-plugin/plugin.json');
 const claudeMarketplace = json('.claude-plugin/marketplace.json');
+const publicSkillsLock = json('public-skills.lock.json');
 
 required(plugin, ['name', 'version', 'description', 'author', 'skills', 'mcpServers', 'interface']);
 if (plugin.name !== 'aictrl') errors.push('Codex plugin name must be aictrl');
@@ -65,11 +68,26 @@ else {
   if (typeof entry.category !== 'string' || !entry.category) errors.push('Codex marketplace category is required');
 }
 
-if (mcp.mcpServers?.aictrl?.url !== 'https://aictrl.dev/mcp/workflows') {
-  errors.push('Codex MCP must target the dedicated workflow endpoint');
+if (
+  mcp.mcpServers?.aictrl?.url
+  !== publicMcpUrl('codex-plugin-directory', plugin.version, publicSkillsLock.skillsVersion)
+) {
+  errors.push('Codex MCP must target its listing-specific versioned workflow resource');
+}
+if (
+  claudeMcp.mcpServers?.aictrl?.url
+  !== publicMcpUrl('claude-marketplace', claudePlugin.version, publicSkillsLock.skillsVersion)
+) {
+  errors.push('Claude MCP must target its listing-specific versioned workflow resource');
 }
 if (opencode.name !== '@aictrl/opencode' || opencode.bin?.['aictrl-opencode'] !== 'bin/install.js') {
   errors.push('OpenCode npm package metadata is invalid');
+}
+if (
+  opencodeSkills.skillsVersion !== publicSkillsLock.skillsVersion
+  || JSON.stringify(opencodeSkills.skills) !== JSON.stringify(publicSkillsLock.skills)
+) {
+  errors.push('OpenCode skills manifest must match the pinned public skills release');
 }
 
 const testCases = readFileSync(join(root, 'submission/codex/test-cases.md'), 'utf8');
@@ -105,6 +123,10 @@ function json(path) {
 
 function required(object, fields) {
   for (const field of fields) if (object[field] == null) errors.push(`Codex manifest requires ${field}`);
+}
+
+function publicMcpUrl(listing, pluginVersion, skillsVersion) {
+  return `https://aictrl.dev/mcp/workflows/${listing}/${pluginVersion}/implement-code-change/${skillsVersion}`;
 }
 
 function walk(directory) {

@@ -36,6 +36,24 @@ describe('public vendor packages', () => {
     });
   });
 
+  it('binds every vendor MCP resource to its listing and package versions', () => {
+    const lock = json('public-skills.lock.json');
+    const codex = json('plugins/aictrl/.codex-plugin/plugin.json');
+    const claude = json('claude/aictrl/.claude-plugin/plugin.json');
+    const opencode = json('opencode/package.json');
+    const manifest = json('opencode/skills-manifest.json');
+
+    expect(json('plugins/aictrl/.mcp.json').mcpServers.aictrl.url).toBe(
+      publicMcpUrl('codex-plugin-directory', codex.version, lock.skillsVersion),
+    );
+    expect(json('claude/aictrl/.mcp.json').mcpServers.aictrl.url).toBe(
+      publicMcpUrl('claude-marketplace', claude.version, lock.skillsVersion),
+    );
+    expect(manifest).toEqual({ skillsVersion: lock.skillsVersion, skills: lock.skills });
+    expect(opencode.version).toBe(codex.version);
+    expect(opencode.version).toBe(claude.version);
+  });
+
   it('installs, repeats, and uninstalls OpenCode without clobbering unrelated config', () => {
     const root = mkdtempSync(join(tmpdir(), 'aictrl-opencode-test-'));
     const configRoot = join(root, 'opencode');
@@ -47,6 +65,13 @@ describe('public vendor packages', () => {
     );
     const env = { ...process.env, XDG_CONFIG_HOME: root };
     const installer = join(repoRoot, 'opencode/bin/install.js');
+    const packageMetadata = json('opencode/package.json');
+    const skillsManifest = json('opencode/skills-manifest.json');
+    const expectedMcpUrl = publicMcpUrl(
+      'opencode-ecosystem',
+      packageMetadata.version,
+      skillsManifest.skillsVersion,
+    );
 
     execFileSync(process.execPath, [installer], { env });
     execFileSync(process.execPath, [installer], { env });
@@ -56,7 +81,7 @@ describe('public vendor packages', () => {
       theme: 'system',
       mcp: {
         existing: { type: 'remote', url: 'https://example.com/mcp' },
-        aictrl: { type: 'remote', url: 'https://aictrl.dev/mcp/workflows', enabled: true },
+        aictrl: { type: 'remote', url: expectedMcpUrl, enabled: true },
       },
     });
 
@@ -90,4 +115,8 @@ function json(path: string): any {
 
 function jsonAt(path: string): any {
   return JSON.parse(readFileSync(path, 'utf8'));
+}
+
+function publicMcpUrl(listing: string, pluginVersion: string, skillsVersion: string): string {
+  return `https://aictrl.dev/mcp/workflows/${listing}/${pluginVersion}/implement-code-change/${skillsVersion}`;
 }

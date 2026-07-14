@@ -64,7 +64,7 @@ jobs:
         run: npm install --global opencode-ai@1.17.20
       - name: Run packed install, OAuth boundary, repeat, and removal smoke
         env:
-          AICTRL_OPENCODE_CONNECTIVITY_URL: https://sandbox.aictrl.dev/mcp/workflows
+          AICTRL_OPENCODE_CONNECTIVITY_ORIGIN: https://sandbox.aictrl.dev
         run: npm run smoke:opencode-public
 
   e2e:

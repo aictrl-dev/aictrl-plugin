@@ -18,7 +18,8 @@
 
 ## MCP and OAuth
 
-- [ ] `https://aictrl.dev/mcp/workflows` is deployed and publicly reachable.
+- [ ] The generated `codex-plugin-directory` resource URL from
+      `plugins/aictrl/.mcp.json` is deployed and publicly reachable.
 - [ ] Tool scan returns exactly the six workflow lifecycle tools.
 - [ ] Schemas and all three annotations match deployed behavior.
 - [ ] Dynamic registration, PKCE, client/redirect binding, replay, refresh, and
