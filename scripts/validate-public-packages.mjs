@@ -10,11 +10,24 @@ const plugin = json('plugins/aictrl/.codex-plugin/plugin.json');
 const marketplace = json('.agents/plugins/marketplace.json');
 const mcp = json('plugins/aictrl/.mcp.json');
 const opencode = json('opencode/package.json');
+const claudePlugin = json('claude/aictrl/.claude-plugin/plugin.json');
+const claudeMarketplace = json('.claude-plugin/marketplace.json');
 
 required(plugin, ['name', 'version', 'description', 'author', 'skills', 'mcpServers', 'interface']);
 if (plugin.name !== 'aictrl') errors.push('Codex plugin name must be aictrl');
 if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(plugin.version)) {
   errors.push('Codex plugin version must be strict semver');
+}
+const publicVersion = opencode.version;
+if (plugin.version !== publicVersion) {
+  errors.push('Codex and OpenCode public package versions must match');
+}
+if (claudePlugin.version !== publicVersion) {
+  errors.push('Claude and OpenCode public package versions must match');
+}
+const claudeEntry = claudeMarketplace.plugins?.find((candidate) => candidate.name === 'aictrl');
+if (claudeEntry?.version !== publicVersion) {
+  errors.push('Claude marketplace and public package versions must match');
 }
 for (const field of ['skills', 'mcpServers']) {
   const value = plugin[field];

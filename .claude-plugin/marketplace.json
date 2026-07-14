@@ -10,7 +10,7 @@
       "name": "aictrl",
       "source": "./claude/aictrl",
       "description": "Eight portable engineering skills with optional controlled AICtrl workflow execution",
-      "version": "0.1.0-beta.1",
+      "version": "0.1.0-beta.2",
       "author": {
         "name": "aictrl.dev"
       },
