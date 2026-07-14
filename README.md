@@ -46,7 +46,9 @@ npm run verify:public
 ```
 
 CI rejects checksum mismatches, missing/extra skills, manual generated drift,
-invalid Codex metadata, and package lifecycle regressions.
+invalid Codex metadata, and package lifecycle regressions. Clean-client
+lifecycle jobs exercise the real Claude Code and Codex CLIs against the public
+marketplaces, including repeated installation and removal.
 
 ## Release status
 

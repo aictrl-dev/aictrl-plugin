@@ -13,6 +13,7 @@
     "assemble:public": "node scripts/assemble-public-packages.mjs",
     "verify:public": "node scripts/assemble-public-packages.mjs --check",
     "validate:public": "npm run verify:public && node scripts/validate-public-packages.mjs",
+    "smoke:claude-public": "node scripts/smoke-claude-public.mjs",
     "smoke:codex-public": "node scripts/smoke-codex-public.mjs",
     "prepublishOnly": "npm run build"
   },

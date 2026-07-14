@@ -34,6 +34,21 @@ jobs:
       - name: Run clean install, repeat, upgrade, and removal smoke
         run: npm run smoke:codex-public
 
+  claude-public:
+    name: E2E (Claude public marketplace)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install the supported Claude Code CLI
+        run: npm install --global @anthropic-ai/claude-code@2.1.207
+      - name: Run clean public install, repeat, and removal smoke
+        env:
+          AICTRL_CLAUDE_MARKETPLACE_SOURCE: ${{ github.event.pull_request.head.repo.full_name || github.repository }}@${{ github.head_ref || github.ref_name }}
+        run: npm run smoke:claude-public
+
   e2e:
     name: E2E (OpenCode against production)
     runs-on: ubuntu-latest
