@@ -68,7 +68,7 @@ jobs:
         run: npm run smoke:opencode-public
 
   e2e:
-    name: E2E (OpenCode against production)
+    name: E2E (legacy installer against production)
     runs-on: ubuntu-latest
     if: github.event_name == 'push' || !github.event.pull_request.head.repo.fork
     steps:
