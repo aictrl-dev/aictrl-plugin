@@ -15,7 +15,8 @@ release evidence:
 - `aictrl-dev/skills` release and checksums;
 - `aictrl-dev/aictrl-plugin` release and GitHub environments;
 - the `@aictrl` npm organization and package;
-- the OpenAI publisher identity, plugin portal, domain, and reviewer account;
+- the OpenAI publisher identity, plugin portal, domain, reviewer account, and
+  dedicated public reviewer-fixture repository;
 - the OpenCode Ecosystem contribution;
 - incident response and customer communication.
 
@@ -35,8 +36,8 @@ Stop the release when any of these is true:
   negative test;
 - production health or the OpenCode OAuth-boundary smoke test fails;
 - package, secret, lifecycle, or clean-install validation fails;
-- support, privacy, terms, publisher identity, reviewer access, or rollback
-  ownership is incomplete.
+- support, privacy, terms, publisher identity, reviewer access, reproducible
+  fixture data, or rollback ownership is incomplete.
 
 ## Promotion order
 
@@ -149,6 +150,8 @@ test in the release evidence.
    `readOnlyHint`, `openWorldHint`, and `destructiveHint` annotations.
 5. Upload the final generated skill tree, listing assets, starter prompts,
    release notes, and exactly five positive plus three negative reviewer cases.
+   Every positive case must name its real fixture and account requirements; do
+   not submit placeholder repository, issue, pull-request, or run identifiers.
 6. Verify the reviewer account works without MFA, email confirmation, SMS, or
    private-network access. Select only supported regions and complete policy
    attestations after the final review.
@@ -161,7 +164,9 @@ test in the release evidence.
 
 ## Connected beta evidence
 
-The launch proof must use an authorized fixture repository and record:
+The launch proof must use a dedicated, authorized public fixture repository, a
+disposable fixture issue, and the no-MFA reviewer demo account. Do not run the
+submission cases against a production backlog issue. Record:
 
 - referral source, agent platform, skill and plugin versions, without source or
   prompt content;
