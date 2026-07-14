@@ -21,6 +21,19 @@ jobs:
       - run: npm test
       - run: npm run validate:public
 
+  codex-public:
+    name: E2E (Codex public marketplace)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install the supported Codex CLI
+        run: npm install --global @openai/codex@0.144.1
+      - name: Run clean install, repeat, upgrade, and removal smoke
+        run: npm run smoke:codex-public
+
   e2e:
     name: E2E (OpenCode against production)
     runs-on: ubuntu-latest

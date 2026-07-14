@@ -4,6 +4,8 @@
 
 - [x] `.codex-plugin/plugin.json` passes local ingestion validation.
 - [x] Marketplace policy includes installation, authentication, and category.
+- [x] Codex CLI 0.144.1 completes clean marketplace add, install, repeat install,
+      version upgrade, and removal in CI while preserving marketplace configuration.
 - [x] Eight skills are byte-pinned and checksum-verified.
 - [x] Website, support, privacy, and terms URLs return HTTP 200.
 - [x] Starter prompts are limited to three.
