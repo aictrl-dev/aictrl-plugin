@@ -91,8 +91,15 @@ if (
 }
 
 const testCases = readFileSync(join(root, 'submission/codex/test-cases.md'), 'utf8');
-if (!existsSync(join(root, 'submission/codex/reviewer-fixture.md'))) {
-  errors.push('Codex reviewer fixture specification is required');
+for (const fixturePath of [
+  'submission/codex/reviewer-fixture.md',
+  'submission/codex/fixture-template/issue.md',
+  'submission/codex/fixture-template/repository/LICENSE',
+  'submission/codex/fixture-template/repository/package.json',
+  'submission/codex/fixture-template/repository/src/labels.mjs',
+  'submission/codex/fixture-template/repository/test/labels.test.mjs',
+]) {
+  if (!existsSync(join(root, fixturePath))) errors.push(`Codex reviewer fixture file is required: ${fixturePath}`);
 }
 if ((testCases.match(/^### P\d+ /gm) || []).length !== 5) errors.push('Codex reviewer pack must contain exactly five positive cases');
 if ((testCases.match(/^### N\d+ /gm) || []).length !== 3) errors.push('Codex reviewer pack must contain exactly three negative cases');

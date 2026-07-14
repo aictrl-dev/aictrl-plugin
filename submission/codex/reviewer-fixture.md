@@ -4,6 +4,10 @@ Provision this fixture before replacing the placeholders in `test-cases.md` or
 submitting the plugin. Do not use an AICtrl production backlog repository as a
 review fixture.
 
+The deterministic repository seed is in `fixture-template/repository/`, and the
+disposable issue body is in `fixture-template/issue.md`. Keep them synchronized
+with the final provisioned resources.
+
 ## Required external resources
 
 - A dedicated public GitHub repository owned by `aictrl-dev`. A descriptive
@@ -13,6 +17,9 @@ review fixture.
   customer data, private dependencies, or organization-only instructions.
 - One open, disposable issue that requests a bounded code change with explicit
   acceptance criteria. The issue must be safe to run repeatedly.
+- Default-branch rules that reject force-pushes and direct workflow writes while
+  still allowing the GitHub integration to create feature branches and pull
+  requests. The connected workflow must not receive merge permission.
 - An active AICtrl repository connection for the reviewer organization and only
   the fixture repository.
 - A portal demo account that can complete OAuth and the connected cases without
@@ -42,6 +49,11 @@ cancellation case cannot invalidate the approval case.
 
 ## Provisioning verification
 
+After the release owner approves the repository name, copy the contents of
+`fixture-template/repository/` into the new public repository and create its
+fixture issue from `fixture-template/issue.md`. Do not initialize or publish the
+repository from an unreviewed local tree.
+
 Run these read-only checks after the owner provisions the resources:
 
 ```bash
@@ -61,4 +73,3 @@ Then complete a clean-client rehearsal and record only non-secret evidence:
 - redacted evidence, checks, reported cost, and elapsed time.
 
 Replace every placeholder in `test-cases.md` only after this rehearsal passes.
-
