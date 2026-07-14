@@ -132,8 +132,9 @@ npx @aictrl/opencode --project . --uninstall
 ```
 
 Only after the package is publicly installable, submit the one-row AICtrl
-OpenCode Ecosystem change. Keep its issue, PR, merge commit, and listing smoke
-test in the release evidence.
+OpenCode Ecosystem change using `submission/opencode/ecosystem.md`. The current
+upstream policy requires an issue before the PR. Keep its issue, PR, merge
+commit, and listing smoke test in the release evidence.
 
 ## Codex and ChatGPT publication
 

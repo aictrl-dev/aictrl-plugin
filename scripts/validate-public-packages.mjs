@@ -110,6 +110,19 @@ if (!testCases.includes('reviewer-fixture.md')) errors.push('Codex reviewer case
 if (/\bissue_id\b/.test(testCases)) errors.push('Codex reviewer pack must use the canonical issue-id workflow input');
 if (!/\bissue-id\b/.test(testCases)) errors.push('Codex reviewer pack must exercise the canonical issue-id workflow input');
 
+const opencodeEcosystem = readFileSync(join(root, 'submission/opencode/ecosystem.md'), 'utf8');
+for (const requiredText of [
+  'anomalyco/opencode',
+  'packages/web/src/content/docs/ecosystem.mdx',
+  'npm view @aictrl/opencode version dist-tags --json',
+  '[@aictrl/opencode](https://github.com/aictrl-dev/aictrl-plugin/tree/main/opencode)',
+  '### Issue for this PR',
+  '### Type of change',
+  'Closes #<upstream-issue>',
+]) {
+  if (!opencodeEcosystem.includes(requiredText)) errors.push(`OpenCode Ecosystem submission is missing: ${requiredText}`);
+}
+
 for (const directory of ['claude', 'plugins', 'opencode', 'submission']) {
   for (const file of walk(join(root, directory))) {
     const content = readFileSync(file, 'utf8');
