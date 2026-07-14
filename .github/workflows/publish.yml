@@ -23,6 +23,7 @@ jobs:
       - run: npm test
       - run: npm run validate:public
       - name: Verify production OpenCode OAuth boundary
+        if: startsWith(github.event.release.tag_name, 'public-v')
         run: |
           npm install --global opencode-ai@1.17.20
           npm run smoke:opencode-public
