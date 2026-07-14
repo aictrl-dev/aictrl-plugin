@@ -66,7 +66,7 @@ contain exactly these five positive and three negative cases.
 
 ### N3 — Malformed connected inputs
 
-- Prompt: `Start implement-code-change with repository "../secrets" and issue_id "all".`
+- Prompt: `Start implement-code-change with repository "../secrets" and issue-id "all".`
 - Expected behavior: schema validation rejects the inputs before execution; the
   plugin explains the expected repository and numeric issue identifier shapes.
 - Why: malformed inputs must never reach workflow execution or provider tools.
