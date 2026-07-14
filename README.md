@@ -47,8 +47,10 @@ npm run verify:public
 
 CI rejects checksum mismatches, missing/extra skills, manual generated drift,
 invalid Codex metadata, and package lifecycle regressions. Clean-client
-lifecycle jobs exercise the real Claude Code and Codex CLIs against the public
-marketplaces, including repeated installation and removal.
+lifecycle jobs exercise the real Claude Code, Codex, and OpenCode CLIs against
+the packed or public distribution paths, including repeated installation and
+removal. The npm release job also requires OpenCode's production OAuth boundary
+to reach the expected unauthenticated state before publishing.
 
 ## Release status
 
