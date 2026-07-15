@@ -50,8 +50,10 @@
 
 ## Publisher and publication
 
-- [ ] Publisher identity is verified in the owning OpenAI organization.
-- [ ] Submitter has Apps Management write permission.
+- [x] The release owner confirmed on 2026-07-15 that the publisher identity is
+      verified in the owning OpenAI organization.
+- [x] The release owner confirmed on 2026-07-15 that the submitter has Apps
+      Management write permission in that same organization.
 - [ ] Availability regions and policy attestations are approved.
 - [ ] Plugin is submitted, approved, explicitly published, and smoke-tested from
       the universal plugin directory.
