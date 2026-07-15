@@ -1,71 +1,45 @@
-# AICtrl agent plugins
+# AICtrl legacy tenant installer
 
-Install eight portable engineering skills across Claude Code, Codex, and
-OpenCode. Every skill works locally; connected `implement-code-change` adds
-remote workflow execution, approvals, evidence, history, and policy controls.
+> The public AICtrl skills and agent plugin now live in the canonical
+> [`aictrl-dev/skills`](https://github.com/aictrl-dev/skills) repository. This
+> repository no longer owns or generates public skill packages.
 
-## Public packages
+## Public skills and plugin
 
-### Codex / ChatGPT Work
-
-```bash
-codex plugin marketplace add aictrl-dev/aictrl-plugin --ref main
-codex plugin add aictrl@aictrl-public
-```
-
-The repo marketplace lives at `.agents/plugins/marketplace.json`; the Codex
-package lives at `plugins/aictrl`.
-
-### Claude Code
-
-```text
-/plugin marketplace add aictrl-dev/aictrl-plugin
-/plugin install aictrl@aictrl-public
-```
-
-### OpenCode
+Install all eleven portable engineering skills directly:
 
 ```bash
-npx @aictrl/opencode
-opencode mcp auth aictrl
+npx skills add aictrl-dev/skills
 ```
 
-Use `npx @aictrl/opencode --project .` for a project-local install or
-`npx @aictrl/opencode --uninstall` to remove only the AICtrl-managed entries.
+Claude Code and Codex install the repository-root `aictrl` plugin from
+`aictrl-dev/skills`. OpenCode installs `@aictrl/opencode`. All three consume the
+same root `skills/` tree and configure one OAuth MCP server named `aictrl` at
+`https://aictrl.dev/mcp`.
 
-## Reproducible skill source
+See the [canonical repository](https://github.com/aictrl-dev/skills) for current
+install commands, release checksums, submission status, and the public release
+runbook.
 
-`public-skills.lock.json` pins an immutable
-[`aictrl-dev/skills`](https://github.com/aictrl-dev/skills) release, commit, and
-checksum-manifest digest. All three vendor packages contain byte-identical
-copies of the eight launch skills and connect the same `aictrl` server identity
-to the canonical public workflow endpoint.
+## Existing tenant installer
+
+`npx @aictrl/plugin` remains supported for existing organization-scoped setup.
+It accepts an AICtrl organization and API key, then installs tenant-managed
+skills, telemetry, and MCP configuration for the selected editors. It is a
+legacy administration path, not the public acquisition package, and must not
+gain copied public skill trees.
+
+## Development
 
 ```bash
-npm run assemble:public
-npm run verify:public
+npm ci
+npm run build
+npm test
 ```
 
-CI rejects checksum mismatches, missing/extra skills, manual generated drift,
-invalid Codex metadata, and package lifecycle regressions. Clean-client
-lifecycle jobs exercise the real Claude Code, Codex, and OpenCode CLIs against
-the packed or public distribution paths, including repeated installation and
-removal. The npm release job also requires OpenCode's production OAuth boundary
-to reach the expected unauthenticated state before publishing.
-
-## Release status
-
-The package tree is a public beta artifact. Connected release remains gated on
-the production `https://aictrl.dev/mcp` resource, OAuth hardening, clean-client
-lifecycle evidence, publisher verification, and vendor publication checks.
-Local skills do not require an AICtrl account or API key.
-
-Release owners must follow the [public release runbook](docs/public-release-runbook.md),
-including the skills re-pin, first npm publication, vendor smoke tests, evidence,
-and rollback gates.
-
-The existing `npx @aictrl/plugin` tenant installer remains supported and is not
-silently replaced by this public OAuth path.
+CI continues to exercise the legacy installer against production and verifies
+the authenticated public MCP catalog. Public package lifecycle coverage belongs
+to `aictrl-dev/skills`.
 
 Support: https://aictrl.dev/support · Privacy: https://aictrl.dev/privacy ·
 Terms: https://aictrl.dev/terms
