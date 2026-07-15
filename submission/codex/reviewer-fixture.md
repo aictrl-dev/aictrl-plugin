@@ -13,6 +13,9 @@ with the final provisioned resources.
 - Repository: [`aictrl-dev/aictrl-plugin-reviewer-fixture`](https://github.com/aictrl-dev/aictrl-plugin-reviewer-fixture)
 - Baseline revision: `09b5d36ae163a39fe6b3f56ce347a8cb026afd2c`
 - Fixture issue: [`aictrl-dev/aictrl-plugin-reviewer-fixture#1`](https://github.com/aictrl-dev/aictrl-plugin-reviewer-fixture/issues/1)
+- Repository-owned workflow: [`aictrl-dev/aictrl-plugin-reviewer-fixture#2`](https://github.com/aictrl-dev/aictrl-plugin-reviewer-fixture/pull/2),
+  schema/DAG-valid at `77dc71a2e0cd857e09c0fe56055eb0db95ff4961`
+  and pending the required independent approval and merge.
 - Baseline verification: dependency-free `npm test` passes two tests.
 - Default branch: `main`, protected with one approval, stale-review dismissal,
   last-push approval, conversation resolution, and admin enforcement. Force
@@ -32,6 +35,8 @@ until those resources are provisioned and the clean-client rehearsal passes.
 - [x] Default-branch rules that reject force-pushes and direct workflow writes while
   still allowing the GitHub integration to create feature branches and pull
   requests. The connected workflow must not receive merge permission.
+- [ ] The repository-owned `implement-code-change` workflow is independently
+  reviewed and merged through the protected default branch.
 - [ ] An active AICtrl repository connection for the reviewer organization and only
   the fixture repository.
 - [ ] A portal demo account that can complete OAuth and the connected cases without

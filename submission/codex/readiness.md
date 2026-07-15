@@ -17,6 +17,9 @@
 - [x] Reviewer pack contains exactly five positive and three negative cases.
 - [x] The dedicated public reviewer repository, protected baseline, and bounded
       fixture issue described in `reviewer-fixture.md` are provisioned.
+- [ ] The repository-owned fixture workflow in
+      `aictrl-dev/aictrl-plugin-reviewer-fixture#2` is independently reviewed and
+      merged through protected `main`.
 - [ ] Every positive connected reviewer case names the rehearsed no-MFA demo
       account and run data; the AICtrl connection and account remain pending.
 - [ ] Final production logo is approved for the public listing. Screenshots are
