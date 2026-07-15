@@ -46,20 +46,25 @@ Stop the release when any of these is true:
 2. Apply the canonical `implement-code-change` workflow in sandbox. Verify its
    immutable version, `repository` and `issue-id` inputs, exact-revision gate,
    two task bounds, and no-merge/no-deploy boundary.
-3. Merge `aictrl-dev/skills#4`, create a new semantic release, and verify the
-   published `CHECKSUMS.sha256` against the release commit.
-4. Update `public-skills.lock.json` to that exact commit and checksum-manifest
-   digest. Run `npm run assemble:public`; do not hand-edit generated skill files.
-5. Run all package verification below, then merge the plugin PR.
+3. Publish the canonical skills commit as a semantic release and verify the
+   published `CHECKSUMS.sha256` against that exact release commit. For this beta,
+   use `aictrl-dev/skills@v1.0.1` at commit
+   `01cf2fa9b9bcf3b3b48cb00f3e48764c292ecf18`.
+4. Pin that exact commit and checksum-manifest digest in
+   `public-skills.lock.json`. Run `npm run assemble:public`; do not hand-edit
+   generated skill files.
+5. Run all package verification below, but do not merge or publish the plugin
+   yet.
 6. Promote the sandbox runtime batch to production and repeat the health, OAuth,
    MCP catalog, schema, annotation, and connected-workflow checks against the
-   canonical `https://aictrl.dev/mcp` resource.
-7. Publish and verify the public Git, npm, and portal artifacts in the vendor
-   sections below.
+   canonical `https://aictrl.dev/mcp` resource. Stop if the authenticated
+   `tools/list` result is not exactly the six documented lifecycle tools.
+7. Merge the plugin PR only after step 6 passes, then publish and verify the
+   public Git, npm, and portal artifacts in the vendor sections below.
 
-Do not reorder steps 3 and 4. The skills v1.0.0 connected instructions use the
-obsolete `issue_id` key; the canonical workflow requires the exact `issue-id`
-key published by `aictrl-dev/skills#4`.
+Do not reorder steps 3 and 4 or steps 6 and 7. The package must contain the
+hyphenated `issue-id` workflow input, and its canonical MCP URL must be deployed
+and verified before the public plugin is merged.
 
 ## Package verification
 
