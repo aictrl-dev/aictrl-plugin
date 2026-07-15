@@ -111,14 +111,18 @@ For the first beta only, an authenticated `@aictrl` npm owner publishes the
 verified package from the merged release commit:
 
 ```bash
+npm install --global npm@11.18.0
+npm --version
 npm whoami
 npm publish ./opencode --access public --tag beta
 ```
 
-The owner must satisfy npm's current 2FA policy. Do not add a long-lived npm
-token to the repository. After the package exists, configure its trusted
-publisher for GitHub organization `aictrl-dev`, repository `aictrl-plugin`,
-workflow `publish.yml`, environment `release`, and the `npm publish` action.
+Use the same pinned npm version as the release workflow so the package integrity
+is reproducible. The owner must satisfy npm's current 2FA policy. Do not add a
+long-lived npm token to the repository. After the package exists, configure its
+trusted publisher for GitHub organization `aictrl-dev`, repository
+`aictrl-plugin`, workflow `publish.yml`, environment `release`, and the
+`npm publish` action.
 Then publish the matching `public-v<opencode/package.json version>` GitHub
 release from the same commit. The workflow verifies that the manually published
 package has the exact local package integrity and skips the duplicate publish;

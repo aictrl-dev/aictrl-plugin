@@ -13,13 +13,18 @@ const packageIdentity = { name: packageMetadata.name, version: packageMetadata.v
 describe('release publication verifier', () => {
   it('allows publication when the exact version is absent', async () => {
     const pack = vi.fn();
+    const fetchImpl = vi.fn().mockResolvedValue(new Response(null, { status: 404 }));
     const result = await inspectReleasePublication(packageSpec, {
-      fetchImpl: vi.fn().mockResolvedValue(new Response(null, { status: 404 })),
+      fetchImpl,
       pack,
       registry: 'https://registry.example.test',
     });
 
     expect(result).toEqual({ published: false, ...packageIdentity });
+    expect(fetchImpl).toHaveBeenCalledWith(
+      `https://registry.example.test/%40aictrl%2Fopencode/${packageIdentity.version}`,
+      { headers: { accept: 'application/json' } },
+    );
     expect(pack).not.toHaveBeenCalled();
   });
 
