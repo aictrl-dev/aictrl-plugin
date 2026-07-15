@@ -15,9 +15,10 @@
 - [x] Website, support, privacy, and terms URLs return HTTP 200.
 - [x] Starter prompts are limited to three.
 - [x] Reviewer pack contains exactly five positive and three negative cases.
-- [ ] Every positive reviewer case names reproducible fixture/account data; the
-      dedicated public repository, issue, and demo-account access described in
-      `reviewer-fixture.md` are ready.
+- [x] The dedicated public reviewer repository, protected baseline, and bounded
+      fixture issue described in `reviewer-fixture.md` are provisioned.
+- [ ] Every positive connected reviewer case names the rehearsed no-MFA demo
+      account and run data; the AICtrl connection and account remain pending.
 - [ ] Final production logo is approved for the public listing. Screenshots are
       optional in the current submission guidance and are not a release gate.
 

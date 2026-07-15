@@ -8,21 +8,33 @@ The deterministic repository seed is in `fixture-template/repository/`, and the
 disposable issue body is in `fixture-template/issue.md`. Keep them synchronized
 with the final provisioned resources.
 
+## Provisioned GitHub fixture
+
+- Repository: [`aictrl-dev/aictrl-plugin-reviewer-fixture`](https://github.com/aictrl-dev/aictrl-plugin-reviewer-fixture)
+- Baseline revision: `09b5d36ae163a39fe6b3f56ce347a8cb026afd2c`
+- Fixture issue: [`aictrl-dev/aictrl-plugin-reviewer-fixture#1`](https://github.com/aictrl-dev/aictrl-plugin-reviewer-fixture/issues/1)
+- Baseline verification: dependency-free `npm test` passes two tests.
+- Default branch: `main`, protected with one approval, stale-review dismissal,
+  last-push approval, conversation resolution, and admin enforcement. Force
+  pushes, branch deletion, merge commits, and automatic merge are disabled.
+
+The AICtrl repository connection and no-MFA portal demo account remain pending.
+Do not replace the connected test-case placeholders or submit the reviewer pack
+until those resources are provisioned and the clean-client rehearsal passes.
+
 ## Required external resources
 
-- A dedicated public GitHub repository owned by `aictrl-dev`. A descriptive
-  name such as `aictrl-plugin-reviewer-fixture` is recommended, but the release
-  owner must approve the final repository name before creation.
-- One small, deterministic project with a fast test command and no credentials,
+- [x] A dedicated public GitHub repository owned by `aictrl-dev`.
+- [x] One small, deterministic project with a fast test command and no credentials,
   customer data, private dependencies, or organization-only instructions.
-- One open, disposable issue that requests a bounded code change with explicit
+- [x] One open, disposable issue that requests a bounded code change with explicit
   acceptance criteria. The issue must be safe to run repeatedly.
-- Default-branch rules that reject force-pushes and direct workflow writes while
+- [x] Default-branch rules that reject force-pushes and direct workflow writes while
   still allowing the GitHub integration to create feature branches and pull
   requests. The connected workflow must not receive merge permission.
-- An active AICtrl repository connection for the reviewer organization and only
+- [ ] An active AICtrl repository connection for the reviewer organization and only
   the fixture repository.
-- A portal demo account that can complete OAuth and the connected cases without
+- [ ] A portal demo account that can complete OAuth and the connected cases without
   MFA, email confirmation, SMS, private-network access, or support intervention.
 
 Never commit the demo password, recovery code, OAuth token, GitHub installation
@@ -49,17 +61,16 @@ cancellation case cannot invalidate the approval case.
 
 ## Provisioning verification
 
-After the release owner approves the repository name, copy the contents of
-`fixture-template/repository/` into the new public repository and create its
-fixture issue from `fixture-template/issue.md`. Do not initialize or publish the
-repository from an unreviewed local tree.
+The release owner approved and provisioned the repository from the reviewed
+`fixture-template/repository/` tree and created its fixture issue from
+`fixture-template/issue.md`.
 
 Run these read-only checks after the owner provisions the resources:
 
 ```bash
-gh repo view <fixture-owner>/<fixture-repository> \
+gh repo view aictrl-dev/aictrl-plugin-reviewer-fixture \
   --json nameWithOwner,visibility,defaultBranchRef,url
-gh issue view <fixture-issue> --repo <fixture-owner>/<fixture-repository> \
+gh issue view 1 --repo aictrl-dev/aictrl-plugin-reviewer-fixture \
   --json number,title,state,url
 ```
 
