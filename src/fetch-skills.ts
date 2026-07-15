@@ -1,3 +1,5 @@
+import { FETCH_BATCH_SIZE } from './config.js';
+
 export interface FetchWithRetryOptions {
   /** Base delay in ms before first retry (doubles on each attempt). Default 250. */
   delayMs?: number;
@@ -106,6 +108,10 @@ export interface SkillContent {
   files: SkillFile[];
 }
 
+export interface FetchedSkill extends SkillContent {
+  name: string;
+}
+
 interface MarketplaceResponse {
   name: string;
   plugins: Array<{
@@ -202,4 +208,69 @@ export async function fetchSkillContent(
   }
 
   return { markdown, files };
+}
+
+/**
+ * Fetch a marketplace catalog in bounded parallel batches. Skills that exhaust
+ * their per-request retries receive one final serial attempt after the batch
+ * pass, when concurrent pressure has subsided. If any skill is still missing,
+ * reject the complete refresh so callers do not replace an existing catalog
+ * with a partial one.
+ */
+export async function fetchAllSkillContent(
+  baseUrl: string,
+  orgSlug: string,
+  apiKey: string,
+  marketplace: MarketplaceSkill[],
+  warn: (message: string) => void = console.warn,
+): Promise<FetchedSkill[]> {
+  const fetched = new Map<string, FetchedSkill>();
+  const failed: MarketplaceSkill[] = [];
+
+  for (let index = 0; index < marketplace.length; index += FETCH_BATCH_SIZE) {
+    const batch = marketplace.slice(index, index + FETCH_BATCH_SIZE);
+    const results = await Promise.all(
+      batch.map(async (skill) => {
+        try {
+          return await fetchOneSkill(baseUrl, orgSlug, apiKey, skill);
+        } catch (error) {
+          warn(`  ⚠ Retrying ${skill.name} after batch fetch failed: ${(error as Error).message}`);
+          failed.push(skill);
+          return null;
+        }
+      }),
+    );
+    for (const result of results) {
+      if (result) fetched.set(result.name, result);
+    }
+  }
+
+  const exhausted: Array<{ skill: MarketplaceSkill; error: Error }> = [];
+  for (const skill of failed) {
+    try {
+      const result = await fetchOneSkill(baseUrl, orgSlug, apiKey, skill);
+      fetched.set(result.name, result);
+    } catch (error) {
+      exhausted.push({ skill, error: error as Error });
+    }
+  }
+
+  if (exhausted.length > 0) {
+    const names = exhausted.map(({ skill }) => skill.name).join(', ');
+    throw new Error(
+      `Skill refresh incomplete after final retry (${names}); existing installations were not changed`,
+    );
+  }
+
+  return marketplace.map((skill) => fetched.get(skill.name) as FetchedSkill);
+}
+
+async function fetchOneSkill(
+  baseUrl: string,
+  orgSlug: string,
+  apiKey: string,
+  skill: MarketplaceSkill,
+): Promise<FetchedSkill> {
+  const content = await fetchSkillContent(baseUrl, orgSlug, apiKey, skill);
+  return { name: skill.name, markdown: content.markdown, files: content.files };
 }

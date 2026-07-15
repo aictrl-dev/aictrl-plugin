@@ -1,7 +1,13 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { fetchMarketplace, fetchSkillContent, fetchWithRetry, type MarketplaceSkill } from '../src/fetch-skills.js';
+import {
+  fetchAllSkillContent,
+  fetchMarketplace,
+  fetchSkillContent,
+  fetchWithRetry,
+  type MarketplaceSkill,
+} from '../src/fetch-skills.js';
 
 const fixturesDir = join(import.meta.dirname, 'fixtures');
 const marketplaceFixture = JSON.parse(readFileSync(join(fixturesDir, 'marketplace.json'), 'utf-8'));
@@ -114,6 +120,81 @@ describe('fetchSkillContent', () => {
     expect(content.files).toHaveLength(1);
     expect(content.files[0].path).toBe('references/checklist.md');
     expect(content.files[0].content).toContain('Checklist');
+  });
+});
+
+describe('fetchAllSkillContent', () => {
+  const originalFetch = globalThis.fetch;
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+    vi.restoreAllMocks();
+    vi.useRealTimers();
+  });
+
+  it('recovers a skill with one final serial attempt after batch retries exhaust', async () => {
+    let flakyAttempts = 0;
+    globalThis.fetch = vi.fn().mockImplementation((url: string) => {
+      if (url.includes('/flaky/SKILL.md')) {
+        flakyAttempts += 1;
+        if (flakyAttempts <= 4) {
+          return Promise.resolve({ ok: false, status: 429, headers: new Headers() });
+        }
+        return Promise.resolve({ ok: true, status: 200, headers: new Headers(), text: () => Promise.resolve('# Flaky') });
+      }
+      if (url.endsWith('/SKILL.md')) {
+        return Promise.resolve({ ok: true, status: 200, headers: new Headers(), text: () => Promise.resolve('# Stable') });
+      }
+      return Promise.resolve({ ok: false, status: 404, headers: new Headers() });
+    });
+
+    const warn = vi.fn();
+    const promise = fetchAllSkillContent(
+      'https://example.test',
+      'org',
+      'secret',
+      [skill('flaky'), skill('stable')],
+      warn,
+    );
+    await vi.runAllTimersAsync();
+
+    await expect(promise).resolves.toEqual([
+      { name: 'flaky', markdown: '# Flaky', files: [] },
+      { name: 'stable', markdown: '# Stable', files: [] },
+    ]);
+    expect(flakyAttempts).toBe(5);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('Retrying flaky'));
+  });
+
+  it('rejects a partial refresh instead of returning a smaller catalog', async () => {
+    globalThis.fetch = vi.fn().mockImplementation((url: string) => {
+      if (url.includes('/missing/SKILL.md')) {
+        return Promise.resolve({ ok: false, status: 429, headers: new Headers() });
+      }
+      if (url.endsWith('/SKILL.md')) {
+        return Promise.resolve({ ok: true, status: 200, headers: new Headers(), text: () => Promise.resolve('# Stable') });
+      }
+      return Promise.resolve({ ok: false, status: 404, headers: new Headers() });
+    });
+
+    const promise = fetchAllSkillContent(
+      'https://example.test',
+      'org',
+      'secret',
+      [skill('missing'), skill('stable')],
+      vi.fn(),
+    );
+    const caught = promise.catch((error) => error);
+    await vi.runAllTimersAsync();
+
+    const error = await caught;
+    expect(error).toBeInstanceOf(Error);
+    expect(error.message).toContain('Skill refresh incomplete after final retry (missing)');
+    expect(error.message).toContain('existing installations were not changed');
   });
 });
 
@@ -249,3 +330,12 @@ describe('fetchWithRetry', () => {
     expect(response.ok).toBe(true);
   });
 });
+
+function skill(name: string): MarketplaceSkill {
+  return {
+    name,
+    description: `${name} skill`,
+    version: '1.0.0',
+    tags: [],
+  };
+}
