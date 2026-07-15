@@ -91,6 +91,43 @@ if (
 }
 
 const testCases = readFileSync(join(root, 'submission/codex/test-cases.md'), 'utf8');
+const listing = readFileSync(join(root, 'submission/codex/listing.md'), 'utf8');
+for (const value of [
+  plugin.interface?.displayName,
+  plugin.interface?.shortDescription,
+  plugin.interface?.longDescription,
+  plugin.interface?.developerName,
+  plugin.interface?.category,
+  plugin.interface?.websiteURL,
+  plugin.interface?.privacyPolicyURL,
+  plugin.interface?.termsOfServiceURL,
+  plugin.interface?.brandColor,
+  plugin.interface?.logo,
+  publicMcpUrl(),
+  'https://aictrl.dev/support',
+]) {
+  if (typeof value !== 'string' || !value || !listing.includes(`\`${value}\``)) {
+    errors.push(`Codex submission listing is missing the manifest-matched value: ${value}`);
+  }
+}
+for (const prompt of prompts || []) {
+  if (!listing.includes(`\`${prompt}\``)) {
+    errors.push(`Codex submission listing is missing starter prompt: ${prompt}`);
+  }
+}
+if (!listing.includes('| Browser fetch domains | None |')) {
+  errors.push('Codex submission listing must record that the no-custom-UI bundle has no browser fetch domains');
+}
+if (existsSync(join(root, 'plugins/aictrl/.app.json'))) {
+  errors.push('Codex submission listing declares no custom UI, but plugins/aictrl/.app.json exists');
+}
+const logoPath = join(root, 'plugins/aictrl', plugin.interface?.logo || '__missing_logo__');
+if (existsSync(logoPath)) {
+  const logo = readFileSync(logoPath, 'utf8');
+  if (/<(?:script|foreignObject|text|filter)\b|(?:href|xlink:href)\s*=|url\s*\(/i.test(logo)) {
+    errors.push('Codex production logo must not contain script, external resources, embedded text, or filters');
+  }
+}
 for (const fixturePath of [
   'submission/codex/reviewer-fixture.md',
   'submission/codex/fixture-template/issue.md',

@@ -116,6 +116,12 @@ export function assertProductionCatalog(tools) {
     if (typeof tool.description !== 'string' || tool.description.trim() === '') {
       throw new Error(`Production MCP tool ${tool.name ?? '<unnamed>'} has no description.`);
     }
+    if (
+      typeof tool?._meta?.ui?.resourceUri === 'string'
+      || typeof tool?._meta?.['openai/outputTemplate'] === 'string'
+    ) {
+      throw new Error(`Production MCP tool ${tool.name ?? '<unnamed>'} unexpectedly links to custom UI.`);
+    }
   }
 }
 

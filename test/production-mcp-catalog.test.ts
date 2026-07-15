@@ -30,7 +30,7 @@ describe('production MCP catalog smoke', () => {
     expect(() => assertProductionCatalog(liveShape())).not.toThrow();
   });
 
-  it('rejects extra tools, schema drift, annotation drift, and missing descriptions', () => {
+  it('rejects extra tools, contract drift, missing descriptions, and custom UI', () => {
     const extra = [...liveShape(), liveShape()[0]];
     expect(() => assertProductionCatalog(extra)).toThrow(/differs/);
 
@@ -45,6 +45,14 @@ describe('production MCP catalog smoke', () => {
     const missingDescription = liveShape();
     missingDescription[0].description = '';
     expect(() => assertProductionCatalog(missingDescription)).toThrow(/has no description/);
+
+    const standardUi = liveShape();
+    standardUi[0]._meta = { ui: { resourceUri: 'ui://aictrl/workflows.html' } };
+    expect(() => assertProductionCatalog(standardUi)).toThrow(/unexpectedly links to custom UI/);
+
+    const compatibilityUi = liveShape();
+    compatibilityUi[0]._meta = { 'openai/outputTemplate': 'ui://aictrl/workflows.html' };
+    expect(() => assertProductionCatalog(compatibilityUi)).toThrow(/unexpectedly links to custom UI/);
   });
 
   it('uses API-key authentication and accepts an MCP event-stream response', async () => {

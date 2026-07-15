@@ -22,8 +22,12 @@
       merged through protected `main`.
 - [ ] Every positive connected reviewer case names the rehearsed no-MFA demo
       account and run data; the AICtrl connection and account remain pending.
-- [ ] Final production logo is approved for the public listing. Screenshots are
-      optional in the current submission guidance and are not a release gate.
+- [x] `listing.md` records the manifest-matched portal copy and canonical AICtrl
+      logo asset; the SVG has no script, external resource, embedded text,
+      filter, shadow, or background-dependent color.
+- [ ] The release owner approves the logo as rendered in the final portal
+      preview. Screenshots are optional in the current submission guidance and
+      are not a release gate.
 
 ## MCP and OAuth
 
@@ -36,9 +40,11 @@
       safety annotations, and non-empty tool descriptions.
 - [ ] Dynamic registration, PKCE, client/redirect binding, replay, refresh, and
       cancellation negative tests pass from a clean Codex client.
-- [ ] Portal content-security-policy fields contain only the exact browser-fetch
-      domains used by the final package (none for the current no-custom-UI bundle
-      unless the portal scan identifies a required domain).
+- [x] `listing.md` records empty browser content-security-policy allowlists: the
+      final package has no `.app.json`, custom UI, iframe, browser script, or
+      browser-side fetch.
+- [ ] The final portal scan accepts those empty allowlists and does not identify
+      a browser-fetch dependency.
 - [ ] Domain challenge is installed at the portal-provided well-known URL.
 - [ ] Reviewer account works without MFA, email confirmation, SMS, or private network.
 
