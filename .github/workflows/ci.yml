@@ -33,7 +33,7 @@ jobs:
         with:
           node-version: 22
       - name: Install the supported Codex CLI
-        run: npm install --global @openai/codex@0.144.1
+        run: npm install --global @openai/codex@0.144.4
       - name: Run clean install, repeat, upgrade, and removal smoke
         run: npm run smoke:codex-public
 
@@ -46,7 +46,7 @@ jobs:
         with:
           node-version: 22
       - name: Install the supported Claude Code CLI
-        run: npm install --global @anthropic-ai/claude-code@2.1.207
+        run: npm install --global @anthropic-ai/claude-code@2.1.210
       - name: Run clean public install, repeat, and removal smoke
         env:
           AICTRL_CLAUDE_MARKETPLACE_SOURCE: ${{ github.event.pull_request.head.repo.full_name || github.repository }}@${{ github.head_ref || github.ref_name }}
@@ -61,7 +61,7 @@ jobs:
         with:
           node-version: 22
       - name: Install the supported OpenCode CLI
-        run: npm install --global opencode-ai@1.17.20
+        run: npm install --global opencode-ai@1.18.1
       - name: Run packed install, OAuth boundary, repeat, and removal smoke
         env:
           AICTRL_OPENCODE_CONNECTIVITY_ORIGIN: https://sandbox.aictrl.dev

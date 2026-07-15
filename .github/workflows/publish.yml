@@ -27,7 +27,7 @@ jobs:
       - name: Verify production OpenCode OAuth boundary
         if: startsWith(github.event.release.tag_name, 'public-v')
         run: |
-          npm install --global opencode-ai@1.17.20
+          npm install --global opencode-ai@1.18.1
           npm run smoke:opencode-public
       - name: Resolve release target
         id: release
