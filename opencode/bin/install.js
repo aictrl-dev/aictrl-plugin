@@ -17,9 +17,9 @@ const skillsRoot = join(configRoot, 'skills');
 const configFile = projectRoot ? resolve(projectRoot, 'opencode.json') : join(configRoot, 'opencode.json');
 const sourceSkills = join(packageRoot, 'skills');
 const skillsManifest = readSkillsManifest(sourceSkills);
-const packageMetadata = readPackageMetadata();
+readPackageMetadata();
 const skillNames = [...new Set(skillsManifest.skills)].sort();
-const mcpUrl = publicMcpUrl(packageMetadata.version, skillsManifest.skillsVersion);
+const mcpUrl = 'https://aictrl.dev/mcp';
 
 if (args.has('--uninstall')) {
   for (const skill of skillNames) rmSync(join(skillsRoot, skill), { recursive: true, force: true });
@@ -76,11 +76,6 @@ function readPackageMetadata() {
   if (metadata.name !== '@aictrl/opencode' || !isVersion(metadata.version)) {
     fail('Package metadata is invalid; reinstall the package.');
   }
-  return metadata;
-}
-
-function publicMcpUrl(pluginVersion, skillsVersion) {
-  return `https://aictrl.dev/mcp/workflows/opencode-ecosystem/${pluginVersion}/implement-code-change/${skillsVersion}`;
 }
 
 function isVersion(value) {

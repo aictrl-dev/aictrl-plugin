@@ -20,7 +20,7 @@ const source = process.env.AICTRL_CLAUDE_MARKETPLACE_SOURCE || 'aictrl-dev/aictr
 const env = { ...process.env, CLAUDE_CONFIG_DIR: configDir };
 const marketplaceName = 'aictrl-public';
 const pluginId = `aictrl@${marketplaceName}`;
-const publicSkillsLock = jsonFile(join(root, 'public-skills.lock.json'));
+const publicMcpUrl = 'https://aictrl.dev/mcp';
 const expectedSkills = [
   'code-review',
   'create-bug',
@@ -83,8 +83,8 @@ function assertInstalled() {
   }
 
   const mcp = jsonFile(join(installedRoot, '.mcp.json'));
-  if (mcp.mcpServers?.aictrl?.url !== publicMcpUrl(manifest.version)) {
-    throw new Error('Installed Claude plugin does not target its versioned workflow MCP resource');
+  if (mcp.mcpServers?.aictrl?.url !== publicMcpUrl) {
+    throw new Error('Installed Claude plugin does not target the canonical public workflow endpoint');
   }
 
   const skillsRoot = join(installedRoot, 'skills');
@@ -124,8 +124,4 @@ function jsonOutput(args) {
 
 function jsonFile(path) {
   return JSON.parse(readFileSync(path, 'utf8'));
-}
-
-function publicMcpUrl(pluginVersion) {
-  return `https://aictrl.dev/mcp/workflows/claude-marketplace/${pluginVersion}/implement-code-change/${publicSkillsLock.skillsVersion}`;
 }

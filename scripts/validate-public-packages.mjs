@@ -70,15 +70,15 @@ else {
 
 if (
   mcp.mcpServers?.aictrl?.url
-  !== publicMcpUrl('codex-plugin-directory', plugin.version, publicSkillsLock.skillsVersion)
+  !== publicMcpUrl()
 ) {
-  errors.push('Codex MCP must target its listing-specific versioned workflow resource');
+  errors.push('Codex MCP must target the canonical public workflow endpoint');
 }
 if (
   claudeMcp.mcpServers?.aictrl?.url
-  !== publicMcpUrl('claude-marketplace', claudePlugin.version, publicSkillsLock.skillsVersion)
+  !== publicMcpUrl()
 ) {
-  errors.push('Claude MCP must target its listing-specific versioned workflow resource');
+  errors.push('Claude MCP must target the canonical public workflow endpoint');
 }
 if (opencode.name !== '@aictrl/opencode' || opencode.bin?.['aictrl-opencode'] !== 'bin/install.js') {
   errors.push('OpenCode npm package metadata is invalid');
@@ -152,8 +152,8 @@ function required(object, fields) {
   for (const field of fields) if (object[field] == null) errors.push(`Codex manifest requires ${field}`);
 }
 
-function publicMcpUrl(listing, pluginVersion, skillsVersion) {
-  return `https://aictrl.dev/mcp/workflows/${listing}/${pluginVersion}/implement-code-change/${skillsVersion}`;
+function publicMcpUrl() {
+  return 'https://aictrl.dev/mcp';
 }
 
 function walk(directory) {

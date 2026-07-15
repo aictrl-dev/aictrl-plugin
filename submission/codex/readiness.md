@@ -8,8 +8,8 @@
       version upgrade, and removal in CI while preserving marketplace configuration.
 - [x] Claude Code 2.1.207 completes clean public marketplace add, install, repeat
       install, and removal in CI.
-- [ ] OpenCode 1.17.20 installs the packed npm artifact, discovers the exact
-      versioned sandbox OAuth boundary, repeats idempotently, and removes only
+- [x] OpenCode 1.17.20 installs the packed npm artifact, discovers the canonical
+      sandbox OAuth boundary, repeats idempotently, and removes only
       AICtrl-managed state after aictrl-dev/aictrl#3904 is deployed.
 - [x] Eight skills are byte-pinned and checksum-verified.
 - [x] Website, support, privacy, and terms URLs return HTTP 200.
@@ -23,8 +23,8 @@
 
 ## MCP and OAuth
 
-- [ ] The generated `codex-plugin-directory` resource URL from
-      `plugins/aictrl/.mcp.json` is deployed and publicly reachable.
+- [x] The canonical resource URL from `plugins/aictrl/.mcp.json` is deployed and
+      publicly reachable.
 - [ ] Tool scan returns exactly the six workflow lifecycle tools.
 - [ ] Schemas and all three annotations match deployed behavior.
 - [ ] Dynamic registration, PKCE, client/redirect binding, replay, refresh, and

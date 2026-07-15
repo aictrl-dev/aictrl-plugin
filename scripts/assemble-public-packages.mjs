@@ -129,8 +129,8 @@ function writeDistributionMetadata() {
   const claude = readJson('claude/aictrl/.claude-plugin/plugin.json');
   const opencode = readJson('opencode/package.json');
 
-  writeJson('plugins/aictrl/.mcp.json', mcpConfig('codex-plugin-directory', codex.version));
-  writeJson('claude/aictrl/.mcp.json', mcpConfig('claude-marketplace', claude.version));
+  writeJson('plugins/aictrl/.mcp.json', mcpConfig());
+  writeJson('claude/aictrl/.mcp.json', mcpConfig());
   writeJson('opencode/skills-manifest.json', {
     skillsVersion: lock.skillsVersion,
     skills: lock.skills,
@@ -152,11 +152,11 @@ function verifyDistributionMetadata() {
   if (codex.version !== opencode.version || claude.version !== opencode.version) {
     throw new Error('Claude, Codex, and OpenCode public package versions must match');
   }
-  if (codexMcp.mcpServers?.aictrl?.url !== publicMcpUrl('codex-plugin-directory', codex.version)) {
-    throw new Error('Codex MCP resource URL does not match the pinned package and skill versions');
+  if (codexMcp.mcpServers?.aictrl?.url !== publicMcpUrl()) {
+    throw new Error('Codex MCP resource URL is not the canonical public workflow endpoint');
   }
-  if (claudeMcp.mcpServers?.aictrl?.url !== publicMcpUrl('claude-marketplace', claude.version)) {
-    throw new Error('Claude MCP resource URL does not match the pinned package and skill versions');
+  if (claudeMcp.mcpServers?.aictrl?.url !== publicMcpUrl()) {
+    throw new Error('Claude MCP resource URL is not the canonical public workflow endpoint');
   }
   if (
     skillsManifest.skillsVersion !== lock.skillsVersion
@@ -166,19 +166,19 @@ function verifyDistributionMetadata() {
   }
 }
 
-function mcpConfig(listing, pluginVersion) {
+function mcpConfig() {
   return {
     mcpServers: {
       aictrl: {
         type: 'http',
-        url: publicMcpUrl(listing, pluginVersion),
+        url: publicMcpUrl(),
       },
     },
   };
 }
 
-function publicMcpUrl(listing, pluginVersion) {
-  return `https://aictrl.dev/mcp/workflows/${listing}/${pluginVersion}/implement-code-change/${lock.skillsVersion}`;
+function publicMcpUrl() {
+  return 'https://aictrl.dev/mcp';
 }
 
 function readJson(path) {

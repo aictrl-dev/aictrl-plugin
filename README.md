@@ -2,7 +2,7 @@
 
 Install eight portable engineering skills across Claude Code, Codex, and
 OpenCode. Every skill works locally; connected `implement-code-change` adds
-versioned remote execution, approvals, evidence, history, and policy controls.
+remote workflow execution, approvals, evidence, history, and policy controls.
 
 ## Public packages
 
@@ -38,9 +38,8 @@ Use `npx @aictrl/opencode --project .` for a project-local install or
 `public-skills.lock.json` pins an immutable
 [`aictrl-dev/skills`](https://github.com/aictrl-dev/skills) release, commit, and
 checksum-manifest digest. All three vendor packages contain byte-identical
-copies of the eight launch skills. Package assembly also generates a distinct
-versioned MCP resource URL for each vendor listing so native OAuth preserves the
-listing, platform, plugin version, and skill version.
+copies of the eight launch skills and connect the same `aictrl` server identity
+to the canonical public workflow endpoint.
 
 ```bash
 npm run assemble:public
@@ -57,10 +56,9 @@ to reach the expected unauthenticated state before publishing.
 ## Release status
 
 The package tree is a public beta artifact. Connected release remains gated on
-the production listing-specific resources beneath
-`https://aictrl.dev/mcp/workflows`, OAuth hardening, clean-client lifecycle
-evidence, publisher verification, and vendor publication checks. Local skills
-do not require an AICtrl account or API key.
+the production `https://aictrl.dev/mcp` resource, OAuth hardening, clean-client
+lifecycle evidence, publisher verification, and vendor publication checks.
+Local skills do not require an AICtrl account or API key.
 
 Release owners must follow the [public release runbook](docs/public-release-runbook.md),
 including the skills re-pin, first npm publication, vendor smoke tests, evidence,

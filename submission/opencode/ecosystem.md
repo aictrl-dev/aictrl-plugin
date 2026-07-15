@@ -24,8 +24,8 @@ opencode mcp list
 npx @aictrl/opencode --project . --uninstall
 ```
 
-Record the public version, `beta` dist-tag, successful clean install, exact
-versioned MCP URL, OAuth-required boundary, uninstall result, and UTC time.
+Record the public version, `beta` dist-tag, successful clean install, canonical
+MCP URL, OAuth-required boundary, uninstall result, and UTC time.
 
 ## Upstream issue
 
