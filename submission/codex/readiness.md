@@ -29,8 +29,11 @@
 
 - [x] The canonical resource URL from `plugins/aictrl/.mcp.json` is deployed and
       publicly reachable.
-- [ ] Tool scan returns exactly the six workflow lifecycle tools.
-- [ ] Schemas and all three annotations match deployed behavior.
+- [x] The protected-key production scan returns exactly the six workflow
+      lifecycle tools from `https://aictrl.dev/mcp` (CI run `29420053568`, job
+      `87367910414`).
+- [x] The same production scan matches the approved input schemas, all three
+      safety annotations, and non-empty tool descriptions.
 - [ ] Dynamic registration, PKCE, client/redirect binding, replay, refresh, and
       cancellation negative tests pass from a clean Codex client.
 - [ ] Portal content-security-policy fields contain only the exact browser-fetch
