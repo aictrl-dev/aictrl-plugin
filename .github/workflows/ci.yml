@@ -67,6 +67,20 @@ jobs:
           AICTRL_OPENCODE_CONNECTIVITY_ORIGIN: https://sandbox.aictrl.dev
         run: npm run smoke:opencode-public
 
+  production-mcp:
+    name: Smoke (production MCP catalog)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || !github.event.pull_request.head.repo.fork
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify the authenticated six-tool production catalog
+        env:
+          AICTRL_API_KEY: ${{ secrets.AICTRL_API_KEY }}
+        run: npm run smoke:mcp-production
+
   e2e:
     name: E2E (legacy installer against production)
     runs-on: ubuntu-latest

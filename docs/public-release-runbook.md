@@ -58,7 +58,10 @@ Stop the release when any of these is true:
 6. Promote the sandbox runtime batch to production and repeat the health, OAuth,
    MCP catalog, schema, annotation, and connected-workflow checks against the
    canonical `https://aictrl.dev/mcp` resource. Stop if the authenticated
-   `tools/list` result is not exactly the six documented lifecycle tools.
+   `tools/list` result is not exactly the six documented lifecycle tools. The
+   plugin CI performs the catalog, schema, and annotation scan with the
+   protected `AICTRL_API_KEY`; release owners can repeat it without printing the
+   key by running `npm run smoke:mcp-production` with that variable exported.
 7. Merge the plugin PR only after step 6 passes, then publish and verify the
    public Git, npm, and portal artifacts in the vendor sections below.
 
