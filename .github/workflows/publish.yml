@@ -34,7 +34,13 @@ jobs:
         env:
           RELEASE_TAG: ${{ github.event.release.tag_name }}
         run: node scripts/resolve-release-target.mjs "$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+      - name: Verify existing publication
+        id: registry
+        run: >-
+          node scripts/verify-release-publication.mjs
+          "${{ steps.release.outputs.package_spec }}" >> "$GITHUB_OUTPUT"
       - name: Publish release target
+        if: steps.registry.outputs.published != 'true'
         run: >-
           npm publish "${{ steps.release.outputs.package_spec }}"
           --access public

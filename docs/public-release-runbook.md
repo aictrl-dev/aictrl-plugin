@@ -119,6 +119,10 @@ The owner must satisfy npm's current 2FA policy. Do not add a long-lived npm
 token to the repository. After the package exists, configure its trusted
 publisher for GitHub organization `aictrl-dev`, repository `aictrl-plugin`,
 workflow `publish.yml`, environment `release`, and the `npm publish` action.
+Then publish the matching `public-v<opencode/package.json version>` GitHub
+release from the same commit. The workflow verifies that the manually published
+package has the exact local package integrity and skips the duplicate publish;
+an existing version with different contents fails the release.
 
 ### Later beta publications
 
