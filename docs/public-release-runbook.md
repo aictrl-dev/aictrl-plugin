@@ -48,8 +48,8 @@ Stop the release when any of these is true:
    two task bounds, and no-merge/no-deploy boundary.
 3. Publish the canonical skills commit as a semantic release and verify the
    published `CHECKSUMS.sha256` against that exact release commit. For this beta,
-   use `aictrl-dev/skills@v1.0.1` at commit
-   `01cf2fa9b9bcf3b3b48cb00f3e48764c292ecf18`.
+   use `aictrl-dev/skills@v1.0.2` at commit
+   `70c8c1c543a2f26cb59f78e7f83ef3f29cd4ff27`.
 4. Pin that exact commit and checksum-manifest digest in
    `public-skills.lock.json`. Run `npm run assemble:public`; do not hand-edit
    generated skill files.

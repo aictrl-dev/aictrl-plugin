@@ -1,5 +1,5 @@
 {
-  "skillsVersion": "1.0.1",
+  "skillsVersion": "1.0.2",
   "skills": [
     "create-issue",
     "create-bug",
