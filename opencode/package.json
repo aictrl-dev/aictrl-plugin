@@ -1,6 +1,6 @@
 {
   "name": "@aictrl/opencode",
-  "version": "0.1.0-beta.1",
+  "version": "0.1.0-beta.2",
   "description": "Install AICtrl engineering skills and OAuth workflow MCP for OpenCode",
   "type": "module",
   "bin": {
@@ -26,5 +26,9 @@
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "tag": "beta"
   }
 }

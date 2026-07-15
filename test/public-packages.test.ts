@@ -36,6 +36,24 @@ describe('public vendor packages', () => {
     });
   });
 
+  it('uses one canonical workflow MCP resource for every vendor package', () => {
+    const lock = json('public-skills.lock.json');
+    const codex = json('plugins/aictrl/.codex-plugin/plugin.json');
+    const claude = json('claude/aictrl/.claude-plugin/plugin.json');
+    const opencode = json('opencode/package.json');
+    const manifest = json('opencode/skills-manifest.json');
+
+    expect(json('plugins/aictrl/.mcp.json').mcpServers.aictrl.url).toBe(
+      publicMcpUrl(),
+    );
+    expect(json('claude/aictrl/.mcp.json').mcpServers.aictrl.url).toBe(
+      publicMcpUrl(),
+    );
+    expect(manifest).toEqual({ skillsVersion: lock.skillsVersion, skills: lock.skills });
+    expect(opencode.version).toBe(codex.version);
+    expect(opencode.version).toBe(claude.version);
+  });
+
   it('installs, repeats, and uninstalls OpenCode without clobbering unrelated config', () => {
     const root = mkdtempSync(join(tmpdir(), 'aictrl-opencode-test-'));
     const configRoot = join(root, 'opencode');
@@ -47,6 +65,7 @@ describe('public vendor packages', () => {
     );
     const env = { ...process.env, XDG_CONFIG_HOME: root };
     const installer = join(repoRoot, 'opencode/bin/install.js');
+    const expectedMcpUrl = publicMcpUrl();
 
     execFileSync(process.execPath, [installer], { env });
     execFileSync(process.execPath, [installer], { env });
@@ -56,7 +75,7 @@ describe('public vendor packages', () => {
       theme: 'system',
       mcp: {
         existing: { type: 'remote', url: 'https://example.com/mcp' },
-        aictrl: { type: 'remote', url: 'https://aictrl.dev/mcp/workflows', enabled: true },
+        aictrl: { type: 'remote', url: expectedMcpUrl, enabled: true },
       },
     });
 
@@ -65,6 +84,53 @@ describe('public vendor packages', () => {
       theme: 'system',
       mcp: { existing: { type: 'remote', url: 'https://example.com/mcp' } },
     });
+  });
+
+  it('upgrades AICtrl-managed OpenCode state without removing unrelated skills', () => {
+    const root = mkdtempSync(join(tmpdir(), 'aictrl-opencode-upgrade-'));
+    const configRoot = join(root, 'opencode');
+    const configFile = join(configRoot, 'opencode.json');
+    const skillsRoot = join(configRoot, 'skills');
+    const managedSkill = join(skillsRoot, 'implement-code-change');
+    const unrelatedSkill = join(skillsRoot, 'team-custom');
+    mkdirSync(managedSkill, { recursive: true });
+    mkdirSync(unrelatedSkill, { recursive: true });
+    writeFileSync(join(managedSkill, 'SKILL.md'), 'stale managed skill\n');
+    writeFileSync(join(unrelatedSkill, 'SKILL.md'), 'unrelated team skill\n');
+    writeFileSync(
+      configFile,
+      JSON.stringify({
+        theme: 'system',
+        mcp: {
+          existing: { type: 'remote', url: 'https://example.com/mcp' },
+          aictrl: {
+            type: 'remote',
+            url: 'https://aictrl.dev/mcp/workflows/opencode-ecosystem/0.1.0-beta.1/implement-code-change/1.0.0',
+            enabled: true,
+          },
+        },
+      }),
+    );
+
+    execFileSync(process.execPath, [join(repoRoot, 'opencode/bin/install.js')], {
+      env: { ...process.env, XDG_CONFIG_HOME: root },
+    });
+
+    expect(jsonAt(configFile)).toMatchObject({
+      theme: 'system',
+      mcp: {
+        existing: { type: 'remote', url: 'https://example.com/mcp' },
+        aictrl: {
+          type: 'remote',
+          url: publicMcpUrl(),
+          enabled: true,
+        },
+      },
+    });
+    expect(readFileSync(join(managedSkill, 'SKILL.md'), 'utf8')).toBe(
+      readFileSync(join(repoRoot, 'opencode/skills/implement-code-change/SKILL.md'), 'utf8'),
+    );
+    expect(readFileSync(join(unrelatedSkill, 'SKILL.md'), 'utf8')).toBe('unrelated team skill\n');
   });
 
   it('fails closed instead of overwriting malformed OpenCode config', () => {
@@ -90,4 +156,8 @@ function json(path: string): any {
 
 function jsonAt(path: string): any {
   return JSON.parse(readFileSync(path, 'utf8'));
+}
+
+function publicMcpUrl(): string {
+  return 'https://aictrl.dev/mcp';
 }

@@ -18,8 +18,30 @@ jobs:
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
-          cache: npm
+      - name: Install npm with trusted publishing support
+        run: npm install --global npm@11.18.0
       - run: npm ci
       - run: npm run build
       - run: npm test
-      - run: npm publish --access public
+      - run: npm run validate:public
+      - name: Verify production OpenCode OAuth boundary
+        if: startsWith(github.event.release.tag_name, 'public-v')
+        run: |
+          npm install --global opencode-ai@1.18.1
+          npm run smoke:opencode-public
+      - name: Resolve release target
+        id: release
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: node scripts/resolve-release-target.mjs "$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+      - name: Verify existing publication
+        id: registry
+        run: >-
+          node scripts/verify-release-publication.mjs
+          "${{ steps.release.outputs.package_spec }}" >> "$GITHUB_OUTPUT"
+      - name: Publish release target
+        if: steps.registry.outputs.published != 'true'
+        run: >-
+          npm publish "${{ steps.release.outputs.package_spec }}"
+          --access public
+          --tag "${{ steps.release.outputs.dist_tag }}"

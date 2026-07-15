@@ -16,7 +16,10 @@ const configRoot = projectRoot
 const skillsRoot = join(configRoot, 'skills');
 const configFile = projectRoot ? resolve(projectRoot, 'opencode.json') : join(configRoot, 'opencode.json');
 const sourceSkills = join(packageRoot, 'skills');
-const skillNames = readSkillNames(sourceSkills);
+const skillsManifest = readSkillsManifest(sourceSkills);
+readPackageMetadata();
+const skillNames = [...new Set(skillsManifest.skills)].sort();
+const mcpUrl = 'https://aictrl.dev/mcp';
 
 if (args.has('--uninstall')) {
   for (const skill of skillNames) rmSync(join(skillsRoot, skill), { recursive: true, force: true });
@@ -43,7 +46,7 @@ const mcp = config.mcp && typeof config.mcp === 'object' && !Array.isArray(confi
   : {};
 mcp.aictrl = {
   type: 'remote',
-  url: 'https://aictrl.dev/mcp/workflows',
+  url: mcpUrl,
   enabled: true,
 };
 config.$schema ||= 'https://opencode.ai/config.json';
@@ -53,13 +56,30 @@ writeJson(configFile, config);
 console.log(`Installed ${skillNames.length} AICtrl skills and OAuth MCP config.`);
 console.log('Start a new OpenCode session, then run: opencode mcp auth aictrl');
 
-function readSkillNames(directory) {
+function readSkillsManifest(directory) {
   if (!existsSync(directory)) fail('Bundled skills are missing; reinstall the package.');
   const manifest = JSON.parse(readFileSync(new URL('../skills-manifest.json', import.meta.url), 'utf8'));
-  if (!Array.isArray(manifest) || manifest.some((name) => typeof name !== 'string')) {
+  if (
+    !manifest
+    || typeof manifest !== 'object'
+    || !Array.isArray(manifest.skills)
+    || manifest.skills.some((name) => typeof name !== 'string')
+    || !isVersion(manifest.skillsVersion)
+  ) {
     fail('Bundled skills manifest is invalid; reinstall the package.');
   }
-  return [...new Set(manifest)].sort();
+  return manifest;
+}
+
+function readPackageMetadata() {
+  const metadata = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+  if (metadata.name !== '@aictrl/opencode' || !isVersion(metadata.version)) {
+    fail('Package metadata is invalid; reinstall the package.');
+  }
+}
+
+function isVersion(value) {
+  return typeof value === 'string' && /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(value);
 }
 
 function readConfig(file) {

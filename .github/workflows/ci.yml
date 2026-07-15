@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   unit:
     name: Unit Tests
@@ -21,8 +24,65 @@ jobs:
       - run: npm test
       - run: npm run validate:public
 
+  codex-public:
+    name: E2E (Codex public marketplace)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install the supported Codex CLI
+        run: npm install --global @openai/codex@0.144.4
+      - name: Run clean install, repeat, upgrade, and removal smoke
+        run: npm run smoke:codex-public
+
+  claude-public:
+    name: E2E (Claude public marketplace)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install the supported Claude Code CLI
+        run: npm install --global @anthropic-ai/claude-code@2.1.210
+      - name: Run clean public install, repeat, and removal smoke
+        env:
+          AICTRL_CLAUDE_MARKETPLACE_SOURCE: ${{ github.event.pull_request.head.repo.full_name || github.repository }}@${{ github.head_ref || github.ref_name }}
+        run: npm run smoke:claude-public
+
+  opencode-public:
+    name: E2E (OpenCode public package)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install the supported OpenCode CLI
+        run: npm install --global opencode-ai@1.18.1
+      - name: Run packed install, OAuth boundary, repeat, and removal smoke
+        env:
+          AICTRL_OPENCODE_CONNECTIVITY_ORIGIN: https://sandbox.aictrl.dev
+        run: npm run smoke:opencode-public
+
+  production-mcp:
+    name: Smoke (production MCP catalog)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || !github.event.pull_request.head.repo.fork
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify the authenticated six-tool production catalog
+        env:
+          AICTRL_API_KEY: ${{ secrets.AICTRL_API_KEY }}
+        run: npm run smoke:mcp-production
+
   e2e:
-    name: E2E (OpenCode against production)
+    name: E2E (legacy installer against production)
     runs-on: ubuntu-latest
     if: github.event_name == 'push' || !github.event.pull_request.head.repo.fork
     steps:
