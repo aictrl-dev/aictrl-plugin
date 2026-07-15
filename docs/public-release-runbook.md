@@ -147,9 +147,14 @@ commit, and listing smoke test in the release evidence.
    identity and the submitter has Apps Management write access.
 2. Enter the canonical Codex MCP resource URL from `plugins/aictrl/.mcp.json`
    in the plugin portal: `https://aictrl.dev/mcp`.
-3. Store the portal-provided domain token as a new production secret version.
-   Verify that `/.well-known/openai-apps-challenge` returns only the exact token
-   as plain text, then remove the token from local shell history and evidence.
+3. After the portal issues the domain token, temporarily set
+   `OPENAI_APPS_CHALLENGE_TOKEN` directly on the production Cloud Run service
+   using the backend OAuth runbook. Verify that
+   `/.well-known/openai-apps-challenge` returns only the exact token as plain
+   text. Keep the override only while OpenAI may need to verify it, reapply it
+   after any intervening Terraform deployment, and remove it from Cloud Run
+   after review. Never add the token to Terraform, Secret Manager, CI, shell
+   history, or release evidence.
 4. Scan tools and confirm exactly six tools with truthful schemas,
    `readOnlyHint`, `openWorldHint`, and `destructiveHint` annotations.
 5. Upload the final generated skill tree, listing assets, starter prompts,
