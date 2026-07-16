@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "aictrl": {
-      "type": "http",
-      "url": "https://aictrl.dev/mcp"
-    }
-  }
-}

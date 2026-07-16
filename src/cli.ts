@@ -9,11 +9,10 @@ import {
   CLAUDE_SETTINGS_FILE,
   CODEX_CONFIG_FILE,
   CODEX_MARKETPLACE_FILE,
-  FETCH_BATCH_SIZE,
 } from './config.js';
 import { readCredentials, writeOrgCredential, readProjectConfig, writeProjectConfig } from './credentials.js';
 import { verifyApiKey } from './verify.js';
-import { fetchMarketplace, fetchSkillContent, type MarketplaceSkill } from './fetch-skills.js';
+import { fetchAllSkillContent, fetchMarketplace } from './fetch-skills.js';
 import { installClaudePlugin } from './writers/claude.js';
 import { installOpenCode } from './writers/opencode.js';
 import { installCursor } from './writers/cursor.js';
@@ -21,7 +20,6 @@ import { installCodex } from './writers/codex.js';
 import { ensureGitignore } from './gitignore.js';
 import { printPostInstallMessage } from './post-install-message.js';
 import { EDITOR_CHOICES, parseEditors, type Editor } from './editors.js';
-import type { WritableSkill } from './writers/shared.js';
 
 interface CliOptions {
   org?: string;
@@ -93,33 +91,6 @@ async function resolveEditors(options: CliOptions): Promise<Editor[]> {
   }
 
   return selected;
-}
-
-async function fetchAllSkillContent(
-  baseUrl: string,
-  orgSlug: string,
-  apiKey: string,
-  marketplace: MarketplaceSkill[],
-): Promise<WritableSkill[]> {
-  const skills: WritableSkill[] = [];
-
-  for (let i = 0; i < marketplace.length; i += FETCH_BATCH_SIZE) {
-    const batch = marketplace.slice(i, i + FETCH_BATCH_SIZE);
-    const results = await Promise.all(
-      batch.map(async (skill) => {
-        try {
-          const content = await fetchSkillContent(baseUrl, orgSlug, apiKey, skill);
-          return { name: skill.name, markdown: content.markdown, files: content.files };
-        } catch (err) {
-          console.warn(`  ⚠ Skipped ${skill.name}: ${(err as Error).message}`);
-          return null;
-        }
-      }),
-    );
-    skills.push(...results.filter((s): s is WritableSkill => s !== null));
-  }
-
-  return skills;
 }
 
 async function main(): Promise<void> {

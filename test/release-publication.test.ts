@@ -4,9 +4,9 @@ import { vi } from 'vitest';
 
 import { inspectReleasePublication } from '../scripts/verify-release-publication.mjs';
 
-const packageSpec = './opencode';
+const packageSpec = '.';
 const packageMetadata = JSON.parse(
-  readFileSync(resolve(import.meta.dirname, '..', 'opencode', 'package.json'), 'utf8'),
+  readFileSync(resolve(import.meta.dirname, '..', 'package.json'), 'utf8'),
 ) as { name: string; version: string };
 const packageIdentity = { name: packageMetadata.name, version: packageMetadata.version };
 
@@ -22,7 +22,7 @@ describe('release publication verifier', () => {
 
     expect(result).toEqual({ published: false, ...packageIdentity });
     expect(fetchImpl).toHaveBeenCalledWith(
-      `https://registry.example.test/%40aictrl%2Fopencode/${packageIdentity.version}`,
+      `https://registry.example.test/%40aictrl%2Fplugin/${packageIdentity.version}`,
       { headers: { accept: 'application/json' } },
     );
     expect(pack).not.toHaveBeenCalled();
